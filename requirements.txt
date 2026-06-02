@@ -1,0 +1,44 @@
+# --- Manipulação de dados ---
+pandas>=2.1
+numpy>=1.26
+pyarrow>=14.0
+
+# --- Dados espaciais (H5) ---
+geopandas>=0.14
+libpysal>=4.9
+esda>=2.5
+spreg>=1.6
+shapely>=2.0
+fiona>=1.9
+
+# --- Modelagem bayesiana e hierárquica ---
+pymc>=5.9
+arviz>=0.18
+pytensor>=2.18
+
+# --- ML e regressão clássica ---
+scikit-learn>=1.4
+xgboost>=2.0
+statsmodels>=0.14
+linearmodels>=5.3
+
+# --- Bootstrap e simulação ---
+scipy>=1.12
+
+# --- Visualização ---
+matplotlib>=3.8
+seaborn>=0.13
+plotly>=5.18
+folium>=0.15
+
+# --- Notebooks ---
+jupyter>=1.0
+ipykernel>=6.29
+nbformat>=5.9
+
+# --- Utilitários ---
+requests>=2.31
+tqdm>=4.66
+python-dotenv>=1.0
+loguru>=0.7
+pytest>=8.0
