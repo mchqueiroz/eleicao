@@ -39,3 +39,7 @@ provisorio2026:
 
 previsao: painel
 	uv run python -m geovoto.previsao
+
+.PHONY: censo
+censo:
+	uv run python -m geovoto.ibge
