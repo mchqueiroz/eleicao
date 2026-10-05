@@ -54,3 +54,15 @@ def test_eixos_bloqueado_sem_prereg():
     r = subprocess.run(["uv", "run", "python", "-m", "geovoto.eixos"], cwd=ROOT,
                        capture_output=True, text=True)
     assert r.returncode != 0 and "Bloqueado" in r.stderr
+
+
+def test_r2_por_gram_igual_a_regressao_direta():
+    from geovoto.eixos import _r2_por_subconjunto, r2_ajustado
+    n = 800
+    blocos = {"a": rng.normal(size=(n, 3)), "b": rng.normal(size=(n, 5)), "c": rng.normal(size=(n, 2))}
+    y = blocos["a"] @ [1, -1, .5] + blocos["c"][:, 0] + rng.normal(size=n)
+    w = rng.uniform(1, 50, n)
+    r2 = _r2_por_subconjunto(y, blocos, w)
+    for S in [("a",), ("a", "c"), ("a", "b", "c"), ("b",)]:
+        direto = r2_ajustado(y, np.hstack([blocos[b] for b in S]), w)
+        assert abs(r2(S) - direto) < 1e-9

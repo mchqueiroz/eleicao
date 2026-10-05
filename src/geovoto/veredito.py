@@ -40,20 +40,29 @@ def veredito_eixo1(r: dict) -> dict:
     out = {}
     for alvo in ("yA", "yB"):
         reps = {a: [b["eixo1"][alvo]["shapley"]["estrutura"] for b in r[a]["eixo1_4_boot"]] for a in r}
-        est, lo, hi = tendencia(reps)
-        out[f"T1 estruturação ({alvo})"] = (_aumento(est, lo, LIMIAR_TENDENCIA), est, lo, hi)
+        out[f"T1 estruturação ({alvo})"] = classifica_t1(reps)
     pri, ult = min(r), max(r)
     dif = lambda a: np.array([b["real"] - b["placebo"] for b in r[a]["fronteira_boot"]])
-    est, lo, hi = _ic(dif(ult))
-    _, _, queda_hi = _ic(dif(ult) - dif(pri))
+    out["T2 território (real − placebo, p.p.)"] = classifica_t2(dif(ult), dif(pri))
+    return out
+
+
+def classifica_t1(reps_por_ano: dict) -> tuple:
+    est, lo, hi = tendencia(reps_por_ano)
+    return _aumento(est, lo, LIMIAR_TENDENCIA), est, lo, hi
+
+
+def classifica_t2(dif_ult: np.ndarray, dif_pri: np.ndarray) -> tuple:
+    """dif_* = réplicas de (salto real − placebo) no último e no primeiro ano."""
+    est, lo, hi = _ic(dif_ult)
+    _, _, queda_hi = _ic(dif_ult - dif_pri)
     if -LIMIAR_FRONTEIRA <= lo and hi <= LIMIAR_FRONTEIRA:
         v = "refutada"
     elif est >= LIMIAR_FRONTEIRA and queda_hi >= 0:      # sem queda significativa desde o 1º ano
         v = "suportada"
     else:
         v = "inconclusiva"
-    out["T2 território (real − placebo, p.p.)"] = (v, est, lo, hi)
-    return out
+    return v, est, lo, hi
 
 
 def veredito_eixo2(r: dict) -> dict:

@@ -8,3 +8,5 @@ __pycache__/
 .pytest_cache/
 reports/mapa/*.json
 reports/mapa/*.geojson
+# rascunhos da previsão; o pacote FINAL entra no git com `git add -f` (o commit é o carimbo)
+reports/previsao_2T_2026/

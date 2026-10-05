@@ -4,6 +4,7 @@ Geografia da divisão eleitoral no Brasil, 2014–2026 (análise ecológica, por
 
 - `PLAN.md`: plano, fontes, riscos e escopo
 - `HIPOTESES.md`: pré-registro (**rascunho até a tag `prereg-v1`**)
+- `DATA.md`: dicionário de dados (fonte, definição, tratamento e risco de cada variável)
 - `legacy/`: versão anterior; **contém dados sintéticos, não usar como evidência** (ver `legacy/LEIAME.md`)
 
 ## Rodar
@@ -14,6 +15,9 @@ make download verificar    # TSE 2014–2022, diretório de municípios, malha 2
 make all                   # painel municipal + testes
 make secoes censo vizinhanca
 make provisorio2026 previsao   # snapshot provisório do 1º turno 2026 e previsão do 2º turno
+make pacote-previsao           # pacote congelável da previsão (CSV, LEIAME, hashes)
+make avaliar-previsao          # depois do 2º turno: avaliação pré-escrita
+make poder                     # poder do desenho (desfechos simulados), antes do pré-registro
 make eixos veredito bym2   # análise dos eixos: só roda depois de `git tag prereg-v1`
 make economia prefeitos exploratorio mapa   # exploratórias e mapa público
 ```

@@ -4,6 +4,9 @@ import pytest
 
 from geovoto import PROCESSED
 
+pytestmark = pytest.mark.skipif(not (PROCESSED / "painel_presidente.parquet").exists(),
+                                reason="dados processados ausentes (rode o Makefile)")
+
 N_MUNICIPIOS = 5570  # estável de 2013 a 2024; 2026 terá 5571 (Boa Esperança do Norte/MT)
 
 

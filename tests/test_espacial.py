@@ -1,7 +1,11 @@
 """Grafo de vizinhança: cobre os 5.571 municípios, é simétrico e conexo (requisito do BYM2)."""
 import pandas as pd
+import pytest
 
 from geovoto import PROCESSED
+
+pytestmark = pytest.mark.skipif(not (PROCESSED / "vizinhanca.parquet").exists(),
+                                reason="dados processados ausentes (rode o Makefile)")
 from geovoto.espacial import amc, componentes
 
 

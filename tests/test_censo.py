@@ -4,6 +4,9 @@ import pytest
 
 from geovoto import PROCESSED
 
+pytestmark = pytest.mark.skipif(not (PROCESSED / "censo2022_municipio.parquet").exists(),
+                                reason="dados processados ausentes (rode o Makefile)")
+
 
 @pytest.fixture(scope="module", params=[2010, 2022])
 def censo(request) -> pd.DataFrame:

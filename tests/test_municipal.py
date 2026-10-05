@@ -1,7 +1,11 @@
 """Linhagens partidárias e indicadores de continuidade dos prefeitos."""
 import pandas as pd
+import pytest
 
 from geovoto import PROCESSED
+
+pytestmark = pytest.mark.skipif(not (PROCESSED / "prefeitos.parquet").exists(),
+                                reason="dados processados ausentes (rode o Makefile)")
 from geovoto.municipal import SUCESSORA, linhagem
 
 

@@ -25,3 +25,16 @@ def test_simular_sem_ruido_e_deterministico():
     s = simular(t, par, n=50)
     assert np.allclose(s["margem_abs"], np.abs(2 * t.sA2 - 1))
     assert np.allclose(s["abst"], 0.2)
+
+
+def test_avaliacao_previsao_perfeita_e_baseline_errado():
+    from geovoto.previsao import QS, avaliar_previsao
+    real = pd.DataFrame({"cd_municipio_tse": [1, 2, 3], "votos_A": [60, 30, 50], "votos_B": [40, 70, 50],
+                         "abstencoes": [20, 25, 30], "aptos_apurados": [100, 100, 100], "pct_totalizado": 100.0})
+    abst, margem = np.array([0.20, 0.25, 0.30]), np.array([0.2, 0.4, 0.0])
+    prev = pd.DataFrame({"cd_municipio_tse": [1, 2, 3], "sem_dados_1t": False,
+                         **{f"abst_q{q * 100:g}": abst for q in QS}, **{f"margem_abs_q{q * 100:g}": margem for q in QS},
+                         "abst_baseline": abst + 0.05, "margem_abs_baseline": margem + 0.1})
+    av = avaliar_previsao(prev, real).set_index("alvo")
+    assert np.allclose(av.mae_modelo_pp, 0) and np.allclose(av.pinball_pp, 0)
+    assert np.allclose(av.loc["abst", "mae_baseline_pp"], 5) and (av.cobertura_95 == 1).all()

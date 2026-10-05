@@ -47,14 +47,43 @@ def r2_ajustado(y, X, w) -> float:
     return float(1 - (1 - r2) * (n - 1) / (n - p - 1))
 
 
+def _r2_por_subconjunto(y, blocos: dict, w):
+    """R² ajustado de qualquer união de blocos a partir de uma única matriz Z'WZ do modelo completo.
+
+    Equivale a r2_ajustado(y, hstack(blocos de S), w) (ver tests/test_eixos.py), mas cada submodelo
+    resolve um sistema p×p em vez de uma regressão n×p: viabiliza bootstrap e simulação de poder.
+    """
+    nomes = list(blocos)
+    Z = np.hstack([np.ones((len(y), 1))] + [blocos[b] for b in nomes])
+    Zw = Z * w[:, None]
+    G, g = Zw.T @ Z, Zw.T @ y
+    sst = float(np.sum(w * (y - np.average(y, weights=w)) ** 2))
+    syy, sy, sw = float(np.sum(w * y * y)), float(np.sum(w * y)), float(np.sum(w))
+    cols, i = {}, 1
+    for b in nomes:
+        cols[b] = np.arange(i, i + blocos[b].shape[1])
+        i += blocos[b].shape[1]
+    n = len(y)
+
+    def r2(S) -> float:
+        idx = np.concatenate([[0]] + [cols[b] for b in S])
+        beta = np.linalg.lstsq(G[np.ix_(idx, idx)], g[idx], rcond=None)[0]
+        sse = syy - float(g[idx] @ beta)                 # Σw(y−Zβ)² = y'Wy − β'Z'Wy na solução
+        r = 1 - sse / sst
+        p = len(idx) - 1
+        return float(1 - (1 - r) * (n - 1) / (n - p - 1))
+    return r2
+
+
 def shapley(y, blocos: dict, w) -> dict:
     """Shapley de cada bloco no R² ajustado, amplitude entre ordens, efeitos únicos e compartilhado."""
     nomes = list(blocos)
     cache: dict = {(): 0.0}
+    r2 = _r2_por_subconjunto(np.asarray(y, float), blocos, np.asarray(w, float))
 
     def v(S):
         if S not in cache:
-            cache[S] = r2_ajustado(y, np.hstack([blocos[b] for b in S]), w)
+            cache[S] = r2(S)
         return cache[S]
 
     marg = {b: [] for b in nomes}
@@ -105,18 +134,78 @@ def pares_entre(arestas: pd.DataFrame, rotulo: pd.Series) -> pd.DataFrame:
 
 # ---------- montagem e execução ----------
 
-def base(ano: int) -> pd.DataFrame:
-    p = pd.read_parquet(PROCESSED / "painel_presidente.parquet").query("ano == @ano & turno == 1")
+def base(ano: int, turno: int = 1) -> pd.DataFrame:
+    p = pd.read_parquet(PROCESSED / "painel_presidente.parquet").query("ano == @ano & turno == @turno")
     c = pd.read_parquet(PROCESSED / f"censo{2010 if ano < 2020 else 2022}_municipio.parquet")
     d = p.merge(c, on="cd_municipio_ibge", how="left").set_index("cd_municipio_ibge").sort_index()
+    return _desfechos(d.assign(uf=d.sigla_uf))
+
+
+def _desfechos(d: pd.DataFrame) -> pd.DataFrame:
+    d = d.copy()
     d["log_aptos"] = np.log(d.aptos)
     d["yA"] = np.log((d.votos_A + 0.5) / (d.validos - d.votos_A + 0.5))
     d["yB"] = np.log((d.votos_B + 0.5) / (d.validos - d.votos_B + 0.5))
     d["yComp"] = np.log(d.comparecimento / (d.aptos - d.comparecimento))
     d["margem_abs"] = (d.votos_A - d.votos_B).abs() / d.validos
     d["sA_pp"] = 100 * d.votos_A / d.validos
-    d["uf"] = d.sigla_uf
     return d
+
+
+# ---------- robustez pré-especificada (HIPOTESES.md §1 e §8) ----------
+
+EXTRAS_2022 = {"renda_media": ["renda_pc_media"], "internet": ["pct_domicilios_internet"],
+               "idade": ["idade_mediana"], "alfabetizacao": ["pct_alfabetizados_15mais"]}
+
+
+def regioes_imediatas() -> pd.Series:
+    from geovoto import RAW
+    r = pd.read_csv(RAW / "bd" / "municipio.csv.gz", usecols=["id_municipio", "id_regiao_imediata"])
+    r = r.set_index("id_municipio").id_regiao_imediata
+    return pd.concat([r, pd.Series({5101837: r[5107925]})])   # Boa Esperança do Norte → região de Sorriso
+
+
+def agregar_regioes(d: pd.DataFrame) -> pd.DataFrame:
+    """Escala alternativa (MAUP): soma contagens e pondera covariáveis por aptos em cada região imediata."""
+    reg = d.index.map(regioes_imediatas())
+    contagens = ["votos_A", "votos_B", "validos", "aptos", "comparecimento"]
+    covs = [c for c in sum(DIMENSOES.values(), []) if c != "log_aptos"]
+    w = d.aptos
+    agg = d[contagens].groupby(reg).sum()
+    agg[covs] = d[covs].mul(w, axis=0).groupby(reg).sum().div(w.groupby(reg).sum(), axis=0)
+    agg["uf"] = d.uf.groupby(reg).first()
+    return _desfechos(agg.rename_axis("cd_regiao"))
+
+
+def arestas_regioes(arestas: pd.DataFrame) -> pd.DataFrame:
+    reg = regioes_imediatas()
+    a = pd.DataFrame({"origem": arestas.origem.map(reg), "destino": arestas.destino.map(reg), "tipo": arestas.tipo})
+    return a[a.origem != a.destino].drop_duplicates(["origem", "destino"])
+
+
+def robustez(ano: int, d: pd.DataFrame, V: np.ndarray, arestas: pd.DataFrame) -> dict:
+    """Escala (regiões imediatas), 2º turno como desfecho e, em 2022+, dimensões só do Censo 2022."""
+    out = {}
+    dr = agregar_regioes(d)
+    Vr = mesf(arestas_regioes(arestas), dr.index)[MESF_LIMIAR]
+    br, _ = blocos(dr, Vr)
+    wr = dr.aptos.to_numpy(float)
+    out["regioes_imediatas"] = {a: shapley(dr[a].to_numpy(float), br, wr)["shapley"] for a in ALVOS_BOOT}
+    d2 = base(ano, turno=2)
+    if len(d2) and d2.index.equals(d.index):
+        b2, _ = blocos(d2, V)
+        out["segundo_turno"] = {"yA": shapley(d2.yA.to_numpy(float), b2, d2.aptos.to_numpy(float))["shapley"]}
+    if ano >= 2020:
+        _, b4 = blocos(d, V)
+        z = lambda X: (X - X.mean(0)) / X.std(0)
+        b4 = b4 | {k: z(d[c].to_numpy(float)) for k, c in EXTRAS_2022.items()}
+        w = d.aptos.to_numpy(float)
+        def unicos(y):                       # 9 blocos: 9! ordens seria caro; só os efeitos únicos interessam
+            r2 = _r2_por_subconjunto(y, b4, w)
+            todos = tuple(b4)
+            return {k: r2(todos) - r2(tuple(x for x in todos if x != k)) for k in todos}
+        out["eixo4_estendido"] = {a: unicos(d[a].to_numpy(float)) for a in ALVOS_BOOT}
+    return out
 
 
 def blocos(d: pd.DataFrame, V: np.ndarray) -> tuple[dict, dict]:
@@ -131,29 +220,39 @@ def eixo1_e_4(d: pd.DataFrame, V: np.ndarray, arestas, centro, alvos=ALVOS) -> d
     b1, b4 = blocos(d, V)
     out = {"eixo1": {a: shapley(d[a].to_numpy(float), b1, w) for a in alvos},
            "eixo4": {a: shapley(d[a].to_numpy(float), b4, w) for a in alvos}}
-    if arestas is not None:   # T2: divisa real vs placebo (cada UF partida na mediana da longitude)
-        c = centro.loc[d.index]
-        lado = np.where(c.lon > c.groupby("uf").lon.transform("median"), "L", "O")
-        d = d.assign(placebo=d.uf + lado)
-        pl = pares_entre(arestas, d.placebo)
-        pl = pl[d.uf[pl.origem].to_numpy() == d.uf[pl.destino].to_numpy()]
-        S, reais = b1["estrutura"], pares_entre(arestas, d.uf)
+    if arestas is not None:
+        S = b1["estrutura"]
+        d, reais, pl = pares_fronteira(d, arestas, centro)
         out["fronteira_pp"] = {"real": fronteira(d, reais, S, "uf"),
                                "placebo": fronteira(d, pl, S, "placebo")}
-        # IC de (real − placebo): reamostra divisas inteiras (par de UFs) e, no placebo, UFs inteiras
-        rng = np.random.default_rng(CONFIG["seed"])
-        div_real = [tuple(sorted(x)) for x in zip(d.uf[reais.origem], d.uf[reais.destino])]
-        div_pl = d.uf[pl.origem].to_numpy()
-
-        def reamostra(p, rotulos):
-            grupos = pd.Series(np.arange(len(p))).groupby(pd.Series(rotulos)).apply(list).tolist()
-            idx = np.concatenate([grupos[k] for k in rng.integers(0, len(grupos), len(grupos))])
-            return p.iloc[idx]
-
-        out["fronteira_boot"] = [
-            {"real": fronteira(d, reamostra(reais, div_real), S, "uf"),
-             "placebo": fronteira(d, reamostra(pl, div_pl), S, "placebo")} for _ in range(N_BOOT)]
+        out["fronteira_boot"] = bootstrap_fronteira(d, reais, pl, S, N_BOOT, CONFIG["seed"])
     return out
+
+
+def pares_fronteira(d: pd.DataFrame, arestas, centro) -> tuple:
+    """Pares contíguos em UFs diferentes (reais) e pares dentro da UF que cruzam a linha-placebo
+    (cada UF partida na mediana da longitude dos centroides)."""
+    c = centro.loc[d.index]
+    lado = np.where(c.lon > c.groupby("uf").lon.transform("median"), "L", "O")
+    d = d.assign(placebo=d.uf + lado)
+    pl = pares_entre(arestas, d.placebo)
+    pl = pl[d.uf[pl.origem].to_numpy() == d.uf[pl.destino].to_numpy()]
+    return d, pares_entre(arestas, d.uf), pl
+
+
+def bootstrap_fronteira(d, reais, pl, S, n: int, seed: int) -> list:
+    """IC de (real − placebo): reamostra divisas inteiras (par de UFs) e, no placebo, UFs inteiras."""
+    rng = np.random.default_rng(seed)
+    div_real = [tuple(sorted(x)) for x in zip(d.uf[reais.origem], d.uf[reais.destino])]
+    div_pl = d.uf[pl.origem].to_numpy()
+
+    def reamostra(p, rotulos):
+        grupos = pd.Series(np.arange(len(p))).groupby(pd.Series(rotulos)).apply(list).tolist()
+        idx = np.concatenate([grupos[k] for k in rng.integers(0, len(grupos), len(grupos))])
+        return p.iloc[idx]
+
+    return [{"real": fronteira(d, reamostra(reais, div_real), S, "uf"),
+             "placebo": fronteira(d, reamostra(pl, div_pl), S, "placebo")} for _ in range(n)]
 
 
 def bootstrap_eixo1_4(d: pd.DataFrame, V: np.ndarray, n: int, seed: int) -> list:
@@ -192,6 +291,7 @@ def rodar() -> dict:
         boot = bootstrap_municipios(loc, {"eixo2": decompor_variancia, "eixo3": isolamento_exposicao},
                                     N_BOOT, CONFIG["seed"])
         r["eixo2_boot"], r["eixo3_boot"] = boot["eixo2"].to_dict("list"), boot["eixo3"].to_dict("list")
+        r["robustez"] = robustez(ano, d, V, arestas)
         r["n_autovetores_mesf"] = int(V.shape[1])
         resultados[ano] = r
     return resultados

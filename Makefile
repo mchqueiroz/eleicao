@@ -21,7 +21,8 @@ EXPLORA    := $(MUNICIPAIS) $(RAIS) $(REGIC)
 # apaga o alvo se a receita falhar (evita zip truncado tratado como pronto)
 .DELETE_ON_ERROR:
 .PHONY: all download checksums verificar test painel secoes censo vizinhanca \
-        provisorio2026 previsao eixos bym2 veredito economia prefeitos exploratorio mapa
+        provisorio2026 previsao eixos bym2 veredito economia prefeitos exploratorio mapa \
+        poder pacote-previsao avaliar-previsao
 
 all: painel secoes censo vizinhanca test
 
@@ -89,6 +90,15 @@ provisorio2026:
 previsao: painel
 	uv run python -m geovoto.previsao
 
+# pacote congelável (CSV + LEIAME + SHA256SUMS); gerar com a apuração completa e o código commitado
+pacote-previsao: painel
+	uv run python -m geovoto.previsao pacote
+
+# depois do 2º turno: make provisorio2026 com turno 2, então a avaliação pré-escrita
+avaliar-previsao:
+	uv run python -m geovoto.divulga 2
+	uv run python -m geovoto.previsao avaliar
+
 # ---------- análise: o código recusa rodar sem a tag prereg-v1 (ver geovoto.eixos) ----------
 eixos: painel secoes censo vizinhanca
 	uv run python -m geovoto.eixos
@@ -114,3 +124,7 @@ exploratorio: painel censo vizinhanca economia prefeitos $(REGIC)
 
 mapa: painel vizinhanca
 	uv run python -m geovoto.mapa
+
+# poder do desenho com desfechos simulados (rodar ANTES de congelar o pré-registro; ~1 h)
+poder: painel censo vizinhanca
+	uv run python -m geovoto.poder

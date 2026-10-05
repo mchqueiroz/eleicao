@@ -9,10 +9,12 @@ do município encolhida para a da UF.
 Baseline pré-registrado: abstenção_1T + Δ médio histórico da UF; transferências proporcionais
 (s_A2 = s_A1 entre A e B).
 """
+from pathlib import Path
+
 import numpy as np
 import pandas as pd
 
-from geovoto import CONFIG, PROCESSED
+from geovoto import CONFIG, PROCESSED, ROOT
 
 PI_SD_MIN = 0.10   # piso da escala de π nacional (só 2–3 eleições para estimar)
 C_SD_MIN = 0.05    # piso da incerteza do deslocamento nacional da abstenção (logit)
@@ -157,13 +159,103 @@ def prever(t1_2026: pd.DataFrame, par: dict) -> pd.DataFrame:
                        ab1=t1_2026.ab1.where(~sem_dados, 0.5))   # valores neutros, descartados abaixo
     sim = {k: np.where(sem_dados.to_numpy(), np.nan, v) for k, v in simular(t, par).items()}
     out = t1_2026[["cd_municipio_tse"]].assign(sem_dados_1t=sem_dados.to_numpy())
+    base = baseline(t, par)
     for alvo, s in sim.items():
         for q, v in zip(QS, np.nanquantile(s, QS, axis=0) if np.isnan(s).any() else np.quantile(s, QS, axis=0)):
             out[f"{alvo}_q{q * 100:g}"] = v.round(4)
+        out[f"{alvo}_baseline"] = np.where(sem_dados, np.nan, base[alvo]).round(4)   # congelado junto
     return out
 
 
+# ---------- publicação e avaliação (protocolo de HIPOTESES.md §6) ----------
+
+PACOTE = ROOT / "reports" / "previsao_2T_2026"
+
+
+def pacote(prev: pd.DataFrame, par: dict, bt: pd.DataFrame) -> Path:
+    """Grava o pacote congelável: CSV, LEIAME (protocolo, parâmetros, backtest, proveniência) e hashes."""
+    import hashlib
+    import subprocess
+    from datetime import datetime
+    PACOTE.mkdir(parents=True, exist_ok=True)
+    csv = PACOTE / "previsao_2T_2026.csv"
+    prev.to_csv(csv, index=False)
+    git = lambda *a: subprocess.run(["git", *a], cwd=ROOT, capture_output=True, text=True).stdout.strip()
+    sujo = bool(git("status", "--porcelain", "--", "src", "config.toml"))
+    params = {k: round(float(v), 4) for k, v in par.items() if np.isscalar(v)}
+    leia = [
+        "# Previsão municipal do 2º turno presidencial de 2026\n",
+        f"- Gerado em: {datetime.now():%Y-%m-%d %H:%M} (horário local)",
+        f"- Dados do 1º turno: sistema de divulgação do TSE, snapshot {prev.snapshot.max()} "
+        f"({int((prev.pct_totalizado < 100).sum())} municípios abaixo de 100% apurados)",
+        f"- Código: commit {git('rev-parse', 'HEAD')}{' (com alterações não commitadas!)' if sujo else ''}",
+        "- Alvos: abstenção no 2º turno (abstenções ÷ aptos) e |margem| = |votos do 1º − do 2º colocado do "
+        "1º turno| ÷ válidos do 2º turno. Sem nomes e sem sinal.",
+        "- Colunas `_q2.5 … _q97.5`: quantis da distribuição prevista; `_baseline`: regra simples "
+        "pré-registrada (HIPOTESES.md §6), congelada aqui para a comparação.",
+        "- Avaliação pré-escrita: `python -m geovoto.previsao avaliar` (MAE ponderado por aptos contra o "
+        "baseline, perda pinball média nos quantis e cobertura dos intervalos de 80% e 95%).\n",
+        "## Parâmetros estimados\n", "| Parâmetro | Valor |", "|---|---|",
+        *[f"| {k} | {v} |" for k, v in params.items()], "",
+        "## Backtest (cada eleição prevista com as outras duas)\n",
+        "| Ano | Alvo | MAE modelo (p.p.) | MAE baseline (p.p.) | Cobertura 80% | Cobertura 95% |", "|---|---|---|---|---|---|",
+        *[f"| {r.ano_teste} | {r.alvo} | {r.mae_modelo_pp:.2f} | {r.mae_baseline_pp:.2f} | {r.cobertura_80:.2f} | "
+          f"{r.cobertura_95:.2f} |" for r in bt.itertuples()], "",
+    ]
+    (PACOTE / "LEIAME.md").write_text("\n".join(leia) + "\n")
+    hashes = [f"{hashlib.sha256(p.read_bytes()).hexdigest()}  {p.name}" for p in (csv, PACOTE / "LEIAME.md")]
+    (PACOTE / "SHA256SUMS").write_text("\n".join(hashes) + "\n")
+    return PACOTE
+
+
+def pinball(quantis: dict, y: np.ndarray, w: np.ndarray) -> float:
+    """Perda pinball média sobre os quantis publicados (aproxima o CRPS), ponderada por w."""
+    perdas = [np.average(np.maximum(q * (y - v), (q - 1) * (y - v)), weights=w) for q, v in quantis.items()]
+    return float(np.mean(perdas))
+
+
+def avaliar_previsao(prev: pd.DataFrame, real: pd.DataFrame) -> pd.DataFrame:
+    """prev: CSV do pacote; real: painel do 2º turno (votos_A, votos_B, abstencoes, aptos_apurados,
+    pct_totalizado). Só municípios 100% apurados e com previsão entram."""
+    r = real[real.pct_totalizado >= 100].assign(
+        abst=lambda x: x.abstencoes / x.aptos_apurados,
+        margem_abs=lambda x: (x.votos_A - x.votos_B).abs() / (x.votos_A + x.votos_B))
+    m = prev.merge(r[["cd_municipio_tse", "abst", "margem_abs", "aptos_apurados"]], on="cd_municipio_tse",
+                   suffixes=("", "_real"))
+    m = m[~m.sem_dados_1t]
+    w = m.aptos_apurados.to_numpy(float)
+    linhas = []
+    for alvo in ("abst", "margem_abs"):
+        y = m[alvo + "_real" if alvo + "_real" in m else alvo].to_numpy(float)
+        q = {qq: m[f"{alvo}_q{qq * 100:g}"].to_numpy(float) for qq in QS}
+        linhas.append({
+            "alvo": alvo, "n": len(m),
+            "mae_modelo_pp": 100 * np.average(np.abs(q[0.5] - y), weights=w),
+            "mae_baseline_pp": 100 * np.average(np.abs(m[f"{alvo}_baseline"].to_numpy(float) - y), weights=w),
+            "pinball_pp": 100 * pinball(q, y, w),
+            "cobertura_80": float(np.mean((y >= q[0.1]) & (y <= q[0.9]))),
+            "cobertura_95": float(np.mean((y >= q[0.025]) & (y <= q[0.975])))})
+    return pd.DataFrame(linhas)
+
+
+def _avaliar_cli() -> None:
+    prev = pd.read_csv(PACOTE / "previsao_2T_2026.csv")
+    real = pd.read_parquet(PROCESSED / "painel_2026_t2_provisorio.parquet")
+    av = avaliar_previsao(prev, real)
+    linhas = ["# Avaliação da previsão do 2º turno de 2026\n",
+              f"Pacote avaliado: `{PACOTE}` (confira `SHA256SUMS`). Resultado: snapshot {real.snapshot.max()}.\n",
+              "| Alvo | n | MAE modelo | MAE baseline | Pinball | Cobertura 80% | Cobertura 95% |", "|---|---|---|---|---|---|---|",
+              *[f"| {r.alvo} | {r.n} | {r.mae_modelo_pp:.2f} | {r.mae_baseline_pp:.2f} | {r.pinball_pp:.3f} | "
+                f"{r.cobertura_80:.2f} | {r.cobertura_95:.2f} |" for r in av.itertuples()]]
+    (PACOTE / "AVALIACAO.md").write_text("\n".join(linhas) + "\n")
+    print("\n".join(linhas))
+
+
 if __name__ == "__main__":
+    import sys
+    if sys.argv[1:] == ["avaliar"]:
+        _avaliar_cli()
+        sys.exit()
     d = pares(pd.read_parquet(PROCESSED / "painel_presidente.parquet"))
     bt = backtest(d)
     bt.to_csv(PROCESSED / "backtest.csv", index=False)
@@ -175,5 +267,7 @@ if __name__ == "__main__":
         prev = prever(primeiro_turno(p26), par).merge(
             p26[["cd_municipio_tse", "cd_municipio_ibge", "pct_totalizado", "snapshot"]], on="cd_municipio_tse")
         prev.to_csv(PROCESSED / "previsao_2T_2026.csv", index=False)
+        if sys.argv[1:] == ["pacote"]:
+            print("pacote em", pacote(prev, par, bt))
         print({k: round(v, 4) for k, v in par.items() if isinstance(v, float)})
         print(prev.drop(columns=["snapshot"]).describe().T[["mean", "min", "max"]].round(3))

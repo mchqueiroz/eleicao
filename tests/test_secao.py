@@ -1,7 +1,11 @@
 """A soma dos locais de votação reproduz o painel municipal, município a município."""
 import pandas as pd
+import pytest
 
 from geovoto import PROCESSED
+
+pytestmark = pytest.mark.skipif(not (PROCESSED / "locais_presidente.parquet").exists(),
+                                reason="dados processados ausentes (rode o Makefile)")
 
 
 def test_locais_somam_o_municipio():

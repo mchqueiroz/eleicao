@@ -1,7 +1,11 @@
 """Séries econômicas: cobertura e conferência com totais nacionais divulgados da RAIS."""
 import pandas as pd
+import pytest
 
 from geovoto import PROCESSED
+
+pytestmark = pytest.mark.skipif(not (PROCESSED / "rais_municipio.parquet").exists(),
+                                reason="dados processados ausentes (rode o Makefile)")
 
 
 def test_rais_totais_e_cobertura():
