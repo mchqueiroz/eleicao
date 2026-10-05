@@ -125,6 +125,6 @@ exploratorio: painel censo vizinhanca economia prefeitos $(REGIC)
 mapa: painel vizinhanca
 	uv run python -m geovoto.mapa
 
-# poder do desenho com desfechos simulados (rodar ANTES de congelar o pré-registro; ~1 h)
+# poder do desenho com desfechos simulados (rodar ANTES de congelar o pré-registro; minutos, em paralelo)
 poder: painel censo vizinhanca
-	uv run python -m geovoto.poder
+	OMP_NUM_THREADS=1 OPENBLAS_NUM_THREADS=1 MKL_NUM_THREADS=1 uv run python -m geovoto.poder

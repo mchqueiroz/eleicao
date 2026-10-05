@@ -90,19 +90,30 @@ def _proporcoes(v: list) -> dict:
     return {f"p_{k}": float((v == k).mean()) for k in ("suportada", "refutada", "inconclusiva")} | {"n_rep": len(v)}
 
 
+CENARIOS = ([("T1", ruido, k) for ruido in (0.8, 1.6) for k in (1.0, 1.15, 1.3, 1.6)]      # R² ~0,8 e ~0,55
+            + [("T2", ruido, salto) for ruido in (6.0, 10.0) for salto in (0.0, 2.0, 3.0, 5.0)])
+_EST: tuple = ()     # estrutura compartilhada com os processos filhos (fork)
+
+
+def _cenario(i: int) -> dict:
+    teste, ruido, efeito = CENARIOS[i]
+    rng = np.random.default_rng([CONFIG["seed"], i])    # semente por cenário: independe da ordem
+    est, arestas, centro = _EST
+    if teste == "T1":
+        return {"teste": "T1", "cenario": f"ruído {ruido}, sinal estrutural ×{efeito}",
+                **poder_t1(est, efeito, ruido, rng)}
+    return {"teste": "T2", "cenario": f"ruído {ruido} p.p., salto {efeito} p.p.",
+            **poder_t2(est, arestas, centro, efeito, ruido, rng)}
+
+
 def rodar() -> pd.DataFrame:
-    rng = np.random.default_rng(CONFIG["seed"])
-    est, arestas, centro = _estrutura()
-    linhas = []
-    for ruido in (0.8, 1.6):                               # R² total ~0,8 e ~0,55
-        for k in (1.0, 1.15, 1.3, 1.6):
-            linhas.append({"teste": "T1", "cenario": f"ruído {ruido}, sinal estrutural ×{k}",
-                           **poder_t1(est, k, ruido, rng)})
-    for ruido_pp in (6.0, 10.0):
-        for salto in (0.0, 2.0, 3.0, 5.0):
-            linhas.append({"teste": "T2", "cenario": f"ruído {ruido_pp} p.p., salto {salto} p.p.",
-                           **poder_t2(est, arestas, centro, salto, ruido_pp, rng)})
-    return pd.DataFrame(linhas)
+    """Um processo por cenário. Rode com OMP_NUM_THREADS=1 (o Makefile faz isso): com várias threads
+    de BLAS por processo, matrizes desse tamanho ficam ~3× mais lentas."""
+    import multiprocessing as mp
+    global _EST
+    _EST = _estrutura()
+    with mp.get_context("fork").Pool(min(len(CENARIOS), mp.cpu_count())) as pool:
+        return pd.DataFrame(pool.map(_cenario, range(len(CENARIOS))))
 
 
 if __name__ == "__main__":
