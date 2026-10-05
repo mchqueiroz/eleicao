@@ -1,7 +1,7 @@
 # HIPOTESES.md: pré-registro
 
 **Projeto:** *Entre lugares e dentro deles: renda, escolaridade, território e a geografia da divisão eleitoral no Brasil (2014–2026)*
-**Versão:** 0.1, **RASCUNHO, AINDA NÃO CONGELADO**
+**Versão:** 1.0, **congelada em 2026-10-05** (tag `prereg-v1`)
 **Rascunho criado em:** 2026-10-04, 22h (horário de Brasília)
 
 > Congelamento: commit + tag `prereg-v1` + carimbo de tempo externo (release no GitHub + DOI no Zenodo, ou OSF).
@@ -9,13 +9,15 @@
 
 ---
 
-## 0. Declaração de transparência (preencher antes de congelar)
+## 0. Declaração de transparência
 
 - Este documento foi redigido **depois** do início da divulgação dos resultados provisórios do 1º turno de 2026 (04/10/2026, a partir das 17h).
-- O autor viu: o resultado nacional e os resultados por UF do 1º turno. Não viu mapas por município nem pesquisas de opinião.
-- Nenhuma análise com dados municipais de 2026 foi feita antes deste documento.
+- Até o rascunho, o autor viu o resultado nacional e os resultados por UF do 1º turno. Não viu mapas por município nem pesquisas de opinião.
+- Nenhuma análise com dados municipais de 2026 foi feita antes do rascunho.
+- **Entre o rascunho e o congelamento (04/10, 22h → 05/10):** os resultados municipais provisórios do 1º turno de 2026 foram coletados (100% apurados) e usados (i) na previsão do 2º turno (§6), congelada antes deste documento, e (ii) no mapa descritivo de |margem|, abstenção e NEC, que passou a incluir 2026. Nenhum modelo dos eixos 1 a 4 rodou com desfechos reais de 2026 (nem de 2014–2022).
+- No mesmo intervalo, a medida do T2 (§2) foi trocada por uma versão sem viés, a partir da simulação de poder com desfechos **simulados** sobre a geografia e as covariáveis reais. Os limiares não mudaram.
 - Os dados de 2014, 2018 e 2022 já foram baixados e agregados por município (contagens apenas, sem nenhum modelo dos eixos abaixo).
-- Antes do congelamento, rodaram sobre 2014–2022 apenas as análises **exploratórias** de §7 (H1, H3, H7; ver `data/output/exploratorio/relatorio.md`) e um mapa público de métricas descritivas (|margem|, abstenção, NEC). Os eixos 1 a 4 só foram executados em dados com desfechos embaralhados, para testar o código.
+- Antes do congelamento, rodaram sobre 2014–2022 apenas as análises **exploratórias** de §7 (H1, H3, H7; ver `data/output/exploratorio/relatorio.md`) e o mapa de métricas descritivas citado acima. Os eixos 1 a 4 só foram executados em dados com desfechos embaralhados, para testar o código.
 - Consequência: para o **1º turno de 2026**, os testes têm caráter confirmatório **atenuado**. Para o **2º turno de 2026** e para a previsão (§6), o pré-registro é integral.
 
 ## 1. Definições comuns
