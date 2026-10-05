@@ -132,6 +132,37 @@ def anual(tabela: int, var: int, anos) -> pd.DataFrame:
     return pd.concat(linhas, ignore_index=True)
 
 
+# População de 18 anos ou mais = total − Σ idades 0–17 (idade simples; mesmos códigos em 2010 e 2022)
+IDADES_0_17 = list(range(6557, 6575))
+POP_IDADE = {2022: (9514, {"2": [6794], "286": [113635]}, 100362),   # tabela, fixas, código "Total"
+             2010: (1552, {"1": [0], "2": [0], "286": [0]}, 0)}
+
+
+def pop_18mais(ano: int) -> pd.Series:
+    tabela, fixas, total = POP_IDADE[ano]
+    pop = lambda cat: _serie(tabela, 93, {**fixas, "287": [cat]}, ano)
+    return (pop(total) - sum(pop(c) for c in IDADES_0_17)).rename(f"pop_18mais_{ano}")
+
+
+def acesso_regic() -> pd.DataFrame:
+    """Nível REGIC 2018 (1 = metrópole … 5 = centro local) e distância geodésica (km) do centroide
+    ao município mais próximo de nível ≤ 2 (metrópole ou capital regional, inclusive arranjos)."""
+    import numpy as np
+    r = pd.read_excel(RAW / "ibge" / "regic" / "REGIC2018_Municipios_Hierarquia_e_regiao.xlsx")
+    nivel = r.set_index("codmun")["Hierarquia - grupo"].str[0].astype(int)
+    c = pd.read_parquet(PROCESSED / "centroides.parquet").set_index("cd_municipio_ibge")
+    lat, lon = np.radians(c.lat.to_numpy()), np.radians(c.lon.to_numpy())
+    centros = nivel.reindex(c.index).le(2).to_numpy()
+    dlat = lat[:, None] - lat[centros][None, :]
+    dlon = lon[:, None] - lon[centros][None, :]
+    h = np.sin(dlat / 2) ** 2 + np.cos(lat[:, None]) * np.cos(lat[centros][None, :]) * np.sin(dlon / 2) ** 2
+    dist = 2 * 6371.0 * np.arcsin(np.sqrt(h)).min(axis=1)
+    # Boa Esperança do Norte (2025) não está na REGIC 2018: herda o nível de Sorriso
+    nivel = nivel.reindex(c.index).fillna(nivel.get(5107925)).astype(int)
+    return pd.DataFrame({"cd_municipio_ibge": c.index, "nivel_regic": nivel.values,
+                         "dist_km_centro_regional": dist})
+
+
 if __name__ == "__main__":
     PROCESSED.mkdir(parents=True, exist_ok=True)
     for ano, consultas in [(2010, CONSULTAS_2010), (2022, CONSULTAS_2022)]:
@@ -145,4 +176,10 @@ if __name__ == "__main__":
     eco = pib.merge(pop, on=["cd_municipio_ibge", "ano"], how="outer")
     # pop_estimada falta em 2010 e 2022 (anos de censo: usar censo) e 2023 (IBGE não publicou)
     eco.to_parquet(PROCESSED / "economia_anual.parquet", index=False)
+    adultos = pd.concat([pop_18mais(2010), pop_18mais(2022)], axis=1).rename_axis("cd_municipio_ibge")
+    adultos.reset_index().to_parquet(PROCESSED / "pop_18mais.parquet", index=False)
+    print(adultos.agg(["count", "sum"]).T)
+    reg = acesso_regic()
+    reg.to_parquet(PROCESSED / "acesso_regic.parquet", index=False)
+    print(reg.groupby("nivel_regic").dist_km_centro_regional.describe()[["count", "mean", "max"]].round(1))
     print(eco.groupby("ano")[["pib_mil_reais", "pop_estimada"]].count().T)

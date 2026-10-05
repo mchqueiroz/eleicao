@@ -15,6 +15,7 @@
 - O autor viu: [PREENCHER: nada / resultado nacional / resultados por UF / mapas por município / pesquisas de opinião].
 - Nenhuma análise com dados municipais de 2026 foi feita antes deste documento.
 - Os dados de 2014, 2018 e 2022 já foram baixados e agregados por município (contagens apenas, sem nenhum modelo dos eixos abaixo).
+- Antes do congelamento, rodaram sobre 2014–2022 apenas as análises **exploratórias** de §7 (H1, H3, H7; ver `data/output/exploratorio/relatorio.md`) e um mapa público de métricas descritivas (|margem|, abstenção, NEC). Os eixos 1 a 4 só foram executados em dados com desfechos embaralhados, para testar o código.
 - Consequência: para o **1º turno de 2026**, os testes têm caráter confirmatório **atenuado**. Para o **2º turno de 2026** e para a previsão (§6), o pré-registro é integral.
 
 ## 1. Definições comuns

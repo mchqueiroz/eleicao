@@ -15,7 +15,11 @@ def http_get(url: str, timeout: int = 60, tentativas: int = 4) -> bytes:
         try:
             req = urllib.request.Request(url, headers={"User-Agent": "geovoto (pesquisa academica)"})
             with urllib.request.urlopen(req, timeout=timeout) as r:
-                return r.read()
+                corpo = r.read()
+            if corpo[:2] == b"\x1f\x8b":          # alguns servidores (IBGE) mandam gzip sem pedir
+                import gzip
+                corpo = gzip.decompress(corpo)
+            return corpo
         except Exception:
             if i == tentativas - 1:
                 raise

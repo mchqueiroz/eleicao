@@ -1,0 +1,241 @@
+<title>Atlas da Divisão Eleitoral</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Literata:opsz,wght@7..72,500;7..72,650&family=Public+Sans:wght@400;500;600&display=swap">
+<style>
+/* Layout: cabeçalho curto, controles numa linha, mapa grande à esquerda e painel de leitura à direita (empilha no celular). */
+:root {
+  --bg: #f4f6f5;
+  --surface: #fcfcfb;          /* superfície validada da escala */
+  --fg: #142224;
+  --muted: #56676a;
+  --line: #d3dbda;
+  --accent: #257071;
+  --nodata: #e3e6e5;
+  --c1: #84bcbd; --c2: #5ea3a5; --c3: #3d898c; --c4: #257071; --c5: #16585c; --c6: #0b4144;
+  --font-display: "Literata", Georgia, "Times New Roman", serif;
+  --font-body: "Public Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #111515; --surface: #1a1a19; --fg: #e4ecec; --muted: #9db0b1; --line: #2d3839;
+    --accent: #6fc0c2; --nodata: #2a2f2f;
+    --c1: #235a5d; --c2: #2b7377; --c3: #348c90; --c4: #48a6a9; --c5: #6fc0c2; --c6: #a6dbdc;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #111515; --surface: #1a1a19; --fg: #e4ecec; --muted: #9db0b1; --line: #2d3839;
+  --accent: #6fc0c2; --nodata: #2a2f2f;
+  --c1: #235a5d; --c2: #2b7377; --c3: #348c90; --c4: #48a6a9; --c5: #6fc0c2; --c6: #a6dbdc;
+  color-scheme: dark;
+}
+body { background: var(--bg); color: var(--fg); font-family: var(--font-body); font-size: 15px; line-height: 1.5; }
+.pagina { max-width: 1180px; margin: 0 auto; padding-inline: 16px; padding-block: 24px 40px; display: grid; gap: 20px; }
+header { display: grid; gap: 6px; max-width: 70ch; }
+h1 { font-family: var(--font-display); font-weight: 650; font-size: clamp(1.6rem, 3.2vw, 2.3rem); line-height: 1.15; margin: 0; text-wrap: balance; }
+.lead { color: var(--muted); margin: 0; }
+.controles { display: flex; flex-wrap: wrap; gap: 12px 20px; align-items: end; }
+.campo { display: grid; gap: 4px; }
+.campo > span { font-size: 0.72rem; letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); font-weight: 600; }
+.segmentado { display: inline-flex; flex-wrap: wrap; border: 1px solid var(--line); border-radius: 8px; overflow: hidden; background: var(--surface); }
+.segmentado button { font: inherit; font-size: 0.9rem; border: 0; background: transparent; color: var(--fg); padding: 6px 12px; cursor: pointer; }
+.segmentado button + button { border-left: 1px solid var(--line); }
+.segmentado button[aria-pressed="true"] { background: var(--accent); color: var(--surface); font-weight: 600; }
+.segmentado button:disabled { color: var(--muted); cursor: not-allowed; opacity: 0.55; }
+.segmentado button:focus-visible, input:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+input[type="search"] { font: inherit; padding: 6px 10px; border: 1px solid var(--line); border-radius: 8px; background: var(--surface); color: var(--fg); min-width: 0; width: 15rem; max-width: 100%; }
+.corpo { display: grid; grid-template-columns: minmax(0, 1fr) 300px; gap: 20px; align-items: start; }
+@media (max-width: 860px) { .corpo { grid-template-columns: 1fr; } }
+.mapa { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; position: relative; min-width: 0; min-height: 280px; }
+.mapa svg { display: block; width: 100%; height: auto; }
+.mapa path { stroke: var(--surface); stroke-width: 0.25; }
+.mapa path.ativo { stroke: var(--fg); stroke-width: 1.4; }
+.estado-carregando { position: absolute; inset: 0; display: grid; place-items: center; color: var(--muted); }
+.painel { display: grid; gap: 18px; min-width: 0; }
+.painel h2 { font-family: var(--font-display); font-size: 1.05rem; font-weight: 650; margin: 0 0 6px; }
+.legenda { display: grid; gap: 4px; }
+.legenda .faixa { display: grid; grid-template-columns: 22px 1fr; gap: 8px; align-items: center; font-variant-numeric: tabular-nums; font-size: 0.88rem; }
+.legenda .amostra { width: 22px; height: 12px; border-radius: 3px; }
+.resumo { font-variant-numeric: tabular-nums; color: var(--muted); font-size: 0.9rem; margin: 0; }
+.detalhe table { width: 100%; border-collapse: collapse; font-variant-numeric: tabular-nums; font-size: 0.88rem; }
+.detalhe th, .detalhe td { text-align: right; padding: 4px 6px; border-bottom: 1px solid var(--line); }
+.detalhe th:first-child, .detalhe td:first-child { text-align: left; }
+.detalhe th { color: var(--muted); font-weight: 600; }
+.detalhe caption { text-align: left; caption-side: bottom; padding-top: 6px; color: var(--muted); font-size: 0.82rem; }
+.vazio { color: var(--muted); margin: 0; }
+.dica { position: fixed; pointer-events: none; background: var(--surface); color: var(--fg); border: 1px solid var(--line); border-radius: 8px; padding: 6px 10px; font-size: 0.85rem; box-shadow: 0 4px 14px rgb(0 0 0 / 0.12); font-variant-numeric: tabular-nums; z-index: 5; }
+.notas { color: var(--muted); font-size: 0.82rem; max-width: 90ch; display: grid; gap: 4px; }
+.notas p { margin: 0; }
+@media (prefers-reduced-motion: no-preference) { .mapa path { transition: fill 180ms ease; } }
+</style>
+
+<div class="pagina">
+  <header>
+    <h1>Atlas da Divisão Eleitoral</h1>
+    <p class="lead">Eleição presidencial por município, 2014 a 2026. Só métricas que não dependem de lado: a distância entre os dois mais votados, a abstenção e o número efetivo de candidatos.</p>
+  </header>
+
+  <div class="controles" role="group" aria-label="Escolha do mapa">
+    <div class="campo"><span id="rot-metrica">Métrica</span>
+      <div class="segmentado" aria-labelledby="rot-metrica" id="metrica">
+        <button type="button" data-v="0" aria-pressed="true">Margem</button>
+        <button type="button" data-v="1" aria-pressed="false">Abstenção</button>
+        <button type="button" data-v="2" aria-pressed="false">Nº efetivo de candidatos</button>
+      </div></div>
+    <div class="campo"><span id="rot-ano">Ano</span>
+      <div class="segmentado" aria-labelledby="rot-ano" id="ano">
+        <button type="button" data-v="2014" aria-pressed="false">2014</button>
+        <button type="button" data-v="2018" aria-pressed="false">2018</button>
+        <button type="button" data-v="2022" aria-pressed="true">2022</button>
+        <button type="button" data-v="2026" aria-pressed="false">2026*</button>
+      </div></div>
+    <div class="campo"><span id="rot-turno">Turno</span>
+      <div class="segmentado" aria-labelledby="rot-turno" id="turno">
+        <button type="button" data-v="1" aria-pressed="true">1º</button>
+        <button type="button" data-v="2" aria-pressed="false">2º</button>
+      </div></div>
+    <label class="campo" for="busca"><span>Buscar município</span>
+      <input type="search" id="busca" list="lista-municipios" placeholder="Ex.: Sobral (CE)" autocomplete="off">
+      <datalist id="lista-municipios"></datalist></label>
+  </div>
+
+  <div class="corpo">
+    <div class="mapa" id="mapa"><div class="estado-carregando" id="carregando">Carregando 5.571 municípios…</div></div>
+    <aside class="painel">
+      <section class="legenda" aria-live="polite">
+        <h2 id="titulo-legenda">Margem entre os dois mais votados</h2>
+        <div id="faixas"></div>
+        <p class="resumo" id="resumo"></p>
+      </section>
+      <section class="detalhe">
+        <h2 id="titulo-detalhe">Município</h2>
+        <div id="detalhe"><p class="vazio">Passe o mouse ou toque num município, ou use a busca, para ver todos os anos.</p></div>
+      </section>
+    </aside>
+  </div>
+
+  <footer class="notas">
+    <p><strong>Margem</strong>: |votos do 1º − votos do 2º colocado nacional| ÷ votos válidos, no turno escolhido. <strong>Abstenção</strong>: abstenções ÷ eleitores aptos. <strong>Nº efetivo de candidatos</strong> (Laakso-Taagepera): 1 ÷ Σ(parcela²) dos votos válidos, só no 1º turno.</p>
+    <p>As faixas de cor são as mesmas em todos os anos, para comparar o mapa entre eleições.</p>
+    <p>* 2026: resultado <strong>provisório</strong> do 1º turno (sistema de divulgação do TSE) em <span id="carimbo">—</span>; será substituído pelos arquivos finais.</p>
+    <p>Análise ecológica: descreve municípios, não eleitores. Fontes: TSE (resultados e divulgação 2026), IBGE (malha municipal 2025).</p>
+  </footer>
+</div>
+<div class="dica" id="dica" hidden></div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.9.0/d3.min.js" integrity="sha384-CjloA8y00+1SDAUkjs099PVfnY2KmDC2BZnws9kh8D/lX1s46w6EPhpXdqMfjK6i" crossorigin="anonymous"></script>
+<script>
+const METRICAS = [
+  { nome: "Margem entre os dois mais votados", cortes: [0.05, 0.10, 0.20, 0.30, 0.45], fmt: v => (100 * v).toFixed(1).replace(".", ",") + " p.p." },
+  { nome: "Abstenção", cortes: [0.12, 0.16, 0.20, 0.24, 0.28], fmt: v => (100 * v).toFixed(1).replace(".", ",") + "%" },
+  { nome: "Número efetivo de candidatos", cortes: [2.0, 2.4, 2.8, 3.2, 3.6], fmt: v => v.toFixed(2).replace(".", ",") },
+];
+const estado = { metrica: 0, ano: "2022", turno: "1", ativo: null };
+let dados, geo, caminhos;
+const porNome = new Map();
+
+const cor = i => getComputedStyle(document.documentElement).getPropertyValue(`--c${i + 1}`).trim();
+const classe = (v, cortes) => { const i = cortes.findIndex(c => v < c); return i === -1 ? cortes.length : i; };
+const valor = (id, ano = estado.ano, turno = estado.turno) => dados[ano]?.[turno]?.[id]?.[estado.metrica];
+const rotulo = f => `${f.properties.n} (${f.properties.uf})`;
+
+function rotuloFaixa(i, m) {
+  const c = m.cortes, f = m.fmt;
+  if (i === 0) return `menos de ${f(c[0])}`;
+  if (i === c.length) return `${f(c[c.length - 1])} ou mais`;
+  return `${f(c[i - 1])} a ${f(c[i])}`;
+}
+
+function pintar() {
+  const m = METRICAS[estado.metrica];
+  const paleta = m.cortes.map((_, i) => cor(i)).concat(cor(m.cortes.length));
+  const semDado = getComputedStyle(document.documentElement).getPropertyValue("--nodata").trim();
+  caminhos.attr("fill", d => { const v = valor(d.properties.id); return v == null ? semDado : paleta[classe(v, m.cortes)]; });
+  document.getElementById("titulo-legenda").textContent = m.nome;
+  const faixas = document.getElementById("faixas");
+  faixas.innerHTML = "";
+  const contagem = new Array(m.cortes.length + 1).fill(0), vals = [];
+  for (const f of geo.features) { const v = valor(f.properties.id); if (v != null) { contagem[classe(v, m.cortes)]++; vals.push(v); } }
+  for (let i = 0; i <= m.cortes.length; i++) {
+    const linha = document.createElement("div");
+    linha.className = "faixa";
+    linha.innerHTML = `<span class="amostra" style="background:var(--c${i + 1})"></span><span>${rotuloFaixa(i, m)} · ${contagem[i].toLocaleString("pt-BR")} mun.</span>`;
+    faixas.append(linha);
+  }
+  vals.sort((a, b) => a - b);
+  const mediana = vals.length ? vals[Math.floor(vals.length / 2)] : null;
+  const turnoTxt = estado.turno === "1" ? "1º turno" : "2º turno";
+  document.getElementById("resumo").textContent = mediana == null ? "Sem dados para esta combinação."
+    : `${estado.ano}, ${turnoTxt}: mediana municipal ${m.fmt(mediana)} (${vals.length.toLocaleString("pt-BR")} municípios).`;
+  if (estado.ativo) mostrarDetalhe(estado.ativo);
+}
+
+function mostrarDetalhe(f) {
+  estado.ativo = f;
+  caminhos.classed("ativo", d => d === f);
+  const m = METRICAS[estado.metrica], id = f.properties.id;
+  document.getElementById("titulo-detalhe").textContent = rotulo(f);
+  const fmt = v => v == null ? "—" : m.fmt(v);
+  const linhas = ["2014", "2018", "2022", "2026"].map(a => {
+    const t1 = valor(id, a, "1"), t2 = estado.metrica === 2 ? null : valor(id, a, "2");
+    return `<tr><td>${a}${a === "2026" ? "*" : ""}</td><td>${fmt(t1)}</td><td>${fmt(t2)}</td></tr>`;
+  }).join("");
+  document.getElementById("detalhe").innerHTML =
+    `<table><caption>${m.nome}</caption><thead><tr><th>Ano</th><th>1º turno</th><th>2º turno</th></tr></thead><tbody>${linhas}</tbody></table>`;
+}
+
+function atualizarBotoes() {
+  const semSegundo = estado.ano === "2026" || estado.metrica === 2;
+  if (semSegundo && estado.turno === "2") estado.turno = "1";
+  for (const grupo of ["metrica", "ano", "turno"]) {
+    document.querySelectorAll(`#${grupo} button`).forEach(b => b.setAttribute("aria-pressed", String(b.dataset.v === String(estado[grupo]))));
+  }
+  const b2 = document.querySelector('#turno button[data-v="2"]');
+  b2.disabled = semSegundo;
+  b2.title = estado.metrica === 2 ? "No 2º turno o número efetivo é 2 por construção" : (estado.ano === "2026" ? "O 2º turno de 2026 ainda não ocorreu" : "");
+}
+
+function ligar(grupo, conv = x => x) {
+  document.getElementById(grupo).addEventListener("click", e => {
+    const b = e.target.closest("button");
+    if (!b || b.disabled) return;
+    estado[grupo] = conv(b.dataset.v);
+    atualizarBotoes(); pintar();
+  });
+}
+
+async function iniciar() {
+  [geo, dados] = await Promise.all([d3.json("municipios.geojson"), d3.json("metricas.json")]);
+  document.getElementById("carimbo").textContent = dados["2026"]?.provisorio_ate ?? "—";
+  const largura = 900, altura = 900;
+  const proj = d3.geoMercator().fitSize([largura, altura], geo);
+  const caminho = d3.geoPath(proj);
+  const svg = d3.select("#mapa").append("svg").attr("viewBox", `0 0 ${largura} ${altura}`)
+    .attr("role", "img").attr("aria-label", "Mapa dos municípios do Brasil colorido pela métrica escolhida");
+  const dica = document.getElementById("dica");
+  caminhos = svg.append("g").selectAll("path").data(geo.features).join("path").attr("d", caminho)
+    .on("pointermove", (ev, f) => {
+      const m = METRICAS[estado.metrica], v = valor(f.properties.id);
+      dica.hidden = false;
+      dica.innerHTML = `<strong>${rotulo(f)}</strong><br>${m.nome}: ${v == null ? "sem dado" : m.fmt(v)}`;
+      const x = Math.min(ev.clientX + 14, window.innerWidth - dica.offsetWidth - 8);
+      dica.style.left = x + "px"; dica.style.top = (ev.clientY + 14) + "px";
+    })
+    .on("pointerleave", () => { dica.hidden = true; })
+    .on("click", (ev, f) => mostrarDetalhe(f));
+  for (const f of geo.features) porNome.set(rotulo(f).toLowerCase(), f);
+  document.getElementById("lista-municipios").innerHTML =
+    geo.features.map(rotulo).sort((a, b) => a.localeCompare(b, "pt-BR")).map(n => `<option value="${n}"></option>`).join("");
+  document.getElementById("busca").addEventListener("change", e => {
+    const f = porNome.get(e.target.value.trim().toLowerCase());
+    if (f) mostrarDetalhe(f);
+  });
+  document.getElementById("carregando").remove();
+  ligar("metrica", Number); ligar("ano"); ligar("turno");
+  atualizarBotoes(); pintar();
+  matchMedia("(prefers-color-scheme: dark)").addEventListener("change", pintar);
+  new MutationObserver(pintar).observe(document.documentElement, { attributes: true, attributeFilter: ["data-theme"] });
+}
+iniciar().catch(() => { document.getElementById("carregando").textContent = "Não foi possível carregar os dados do mapa. Recarregue a página."; });
+</script>

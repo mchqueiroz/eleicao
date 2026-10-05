@@ -8,3 +8,11 @@ tse_cdn = "https://cdn.tse.jus.br/estatistica/sead/odsele"
 bd_municipios = "https://storage.googleapis.com/basedosdados-public/one-click-download/br_bd_diretorios_brasil/municipio/municipio.csv.gz"
 
 seed = 20261004
+
+# Bloco incumbente POR PAPEL (HIPOTESES.md): partido do presidente em exercício na data da eleição.
+# É um fato institucional, não uma escolha de lado; toda estimativa é reportada com os dois sinais.
+[incumbente_partido]
+2014 = "PT"
+2018 = "MDB"
+2022 = "PL"
+2026 = "PT"

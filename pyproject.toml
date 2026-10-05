@@ -11,6 +11,8 @@ dependencies = [
     "libpysal>=4.15.0",
     "pymc>=6.3.2",
     "esda>=2.10.0",
+    "openpyxl>=3.1.5",
+    "statsmodels>=0.15.0",
 ]
 
 [dependency-groups]
