@@ -1,7 +1,7 @@
 """Eixos 1–4 do pré-registro (HIPOTESES.md). SÓ RODA DEPOIS DA TAG `prereg-v1`.
 
 Eixo 1: Shapley do R² ajustado entre {estrutura, vizinhança (filtro espacial MESF), território (UF)};
-        T2 por pares de municípios contíguos em UFs diferentes, contra fronteiras-placebo.
+        T2 por pares de municípios contíguos em UFs diferentes; fronteiras-placebo como validação (≈ 0).
 Eixo 2/3: geovoto.metricas sobre locais de votação.
 Eixo 4: Shapley entre as dimensões da estrutura (efeitos únicos + parcela compartilhada).
 """
@@ -111,19 +111,36 @@ def mesf(arestas: pd.DataFrame, ids: pd.Index, limiares=(MESF_LIMIAR,)) -> dict:
 # ---------- território: fronteiras estaduais vs placebo ----------
 
 def fronteira(df: pd.DataFrame, pares: pd.DataFrame, X: np.ndarray, grupo: str) -> float:
-    """Salto médio |γ_a − γ_b| (p.p. de s_A) entre grupos contíguos, condicionado a X.
+    """Salto quadrático médio entre grupos contíguos (p.p. de s_A), condicionado a X e sem viés de ruído.
 
-    Δy_ij = ΔX β + (γ_g(i) − γ_g(j)) + ε em pares contíguos com grupos diferentes.
+    Δy_ij = ΔX β + (γ_g(i) − γ_g(j)) + Δε em pares contíguos com grupos diferentes. Média de
+    (γ̂a − γ̂b)² − Var(γ̂a − γ̂b), com a variância exata para ε municipal iid (pares que dividem um
+    município têm erros correlacionados: Var(Δε) = σ²·AAᵀ). Devolve sinal·√|·|: ≈ 0 sem salto.
+    A versão anterior, média de |γ̂a − γ̂b| menos o placebo, subestimava um salto de 3 p.p. em 1,4–2 p.p.
     """
+    import scipy.sparse as sp
     pos = pd.Series(np.arange(len(df)), index=df.index)
     i, j = pos[pares.origem].to_numpy(), pos[pares.destino].to_numpy()
     cod = df[grupo].astype("category").cat.codes.to_numpy()
     G = np.eye(cod.max() + 1)[cod]
     y = df.sA_pp.to_numpy()
     D = np.c_[X[i] - X[j], (G[i] - G[j])[:, 1:]]
-    coef, *_ = np.linalg.lstsq(D, y[i] - y[j], rcond=None)
-    gama = np.r_[0.0, coef[X.shape[1]:]]
-    return float(np.mean(np.abs(gama[cod[i]] - gama[cod[j]])))
+    dy = y[i] - y[j]
+    inv = np.linalg.pinv(D.T @ D)
+    coef = inv @ D.T @ dy
+    res = dy - D @ coef
+    m = len(dy)
+    A = sp.csr_matrix((np.r_[np.ones(m), -np.ones(m)], (np.r_[np.arange(m), np.arange(m)], np.r_[i, j])),
+                      shape=(m, len(df)))
+    AA = A @ A.T
+    sig2 = res @ res / (AA.diagonal().sum() - np.trace(inv @ D.T @ (AA @ D)))   # E[res'res] = σ² tr((I−P)AAᵀ)
+    k = X.shape[1]
+    H = (inv @ D.T)[k:]
+    V = np.pad(sig2 * (H @ (AA @ H.T)), ((1, 0), (1, 0)))                       # γ da 1ª categoria = 0
+    gama = np.r_[0.0, coef[k:]]
+    a, b = cod[i], cod[j]
+    s2 = float(np.mean((gama[a] - gama[b]) ** 2 - (V[a, a] + V[b, b] - 2 * V[a, b])))
+    return float(np.sign(s2) * np.sqrt(abs(s2)))
 
 
 def pares_entre(arestas: pd.DataFrame, rotulo: pd.Series) -> pd.DataFrame:
@@ -241,7 +258,7 @@ def pares_fronteira(d: pd.DataFrame, arestas, centro) -> tuple:
 
 
 def bootstrap_fronteira(d, reais, pl, S, n: int, seed: int) -> list:
-    """IC de (real − placebo): reamostra divisas inteiras (par de UFs) e, no placebo, UFs inteiras."""
+    """IC do salto real e do placebo: reamostra divisas inteiras (par de UFs) e, no placebo, UFs inteiras."""
     rng = np.random.default_rng(seed)
     div_real = [tuple(sorted(x)) for x in zip(d.uf[reais.origem], d.uf[reais.destino])]
     div_pl = d.uf[pl.origem].to_numpy()

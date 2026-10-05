@@ -42,8 +42,10 @@ def veredito_eixo1(r: dict) -> dict:
         reps = {a: [b["eixo1"][alvo]["shapley"]["estrutura"] for b in r[a]["eixo1_4_boot"]] for a in r}
         out[f"T1 estruturação ({alvo})"] = classifica_t1(reps)
     pri, ult = min(r), max(r)
-    dif = lambda a: np.array([b["real"] - b["placebo"] for b in r[a]["fronteira_boot"]])
-    out["T2 território (real − placebo, p.p.)"] = classifica_t2(dif(ult), dif(pri))
+    boot = lambda a, k: np.array([b[k] for b in r[a]["fronteira_boot"]])
+    out["T2 território (salto corrigido, p.p.)"] = classifica_t2(boot(ult, "real"), boot(pri, "real"))
+    est, lo, hi = _ic(boot(ult, "placebo"))       # validação: com o viés removido, o placebo deve conter 0
+    out["T2 placebo (validação)"] = ("ok" if lo <= 0 <= hi else "falhou: medida enviesada"), est, lo, hi
     return out
 
 
@@ -53,7 +55,7 @@ def classifica_t1(reps_por_ano: dict) -> tuple:
 
 
 def classifica_t2(dif_ult: np.ndarray, dif_pri: np.ndarray) -> tuple:
-    """dif_* = réplicas de (salto real − placebo) no último e no primeiro ano."""
+    """dif_* = réplicas do salto corrigido (geovoto.eixos.fronteira) no último e no primeiro ano."""
     est, lo, hi = _ic(dif_ult)
     _, _, queda_hi = _ic(dif_ult - dif_pri)
     if -LIMIAR_FRONTEIRA <= lo and hi <= LIMIAR_FRONTEIRA:

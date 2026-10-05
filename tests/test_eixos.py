@@ -22,13 +22,13 @@ def test_shapley_blocos_independentes_e_redundantes():
     assert abs(r["compartilhado"] - r["total"]) < 1e-3 and r["min"]["a"] < 1e-3
 
 
-def _grade(salto_pp):
+def _grade(salto_pp, ruido=1.0):
     """Grade 30x30; colunas ≥ 15 formam a 'UF' R. s_A = 40 + 3·x + salto·[R] + ruído."""
     ids = np.arange(900) + 1_000_000
     lin, col = np.divmod(np.arange(900), 30)
     x = rng.normal(size=900)
     uf = np.where(col >= 15, "R", "L")
-    d = pd.DataFrame({"uf": uf, "sA_pp": 40 + 3 * x + salto_pp * (uf == "R") + rng.normal(0, 1, 900)},
+    d = pd.DataFrame({"uf": uf, "sA_pp": 40 + 3 * x + salto_pp * (uf == "R") + rng.normal(0, ruido, 900)},
                      index=ids)
     arestas = [(ids[a], ids[b], "queen") for a in range(900) for b in range(900)
                if a != b and max(abs(lin[a] - lin[b]), abs(col[a] - col[b])) == 1]
@@ -40,6 +40,14 @@ def test_fronteira_recupera_salto():
     assert abs(fronteira(d, pares_entre(a, d.uf), X, "uf") - 5.0) < 0.5
     d, a, X = _grade(0.0)
     assert fronteira(d, pares_entre(a, d.uf), X, "uf") < 0.5
+
+
+def test_fronteira_sem_vies_com_ruido_alto():
+    """Com ruído forte, a média de |γ̂a − γ̂b| fica positiva sem salto; a medida corrigida fica em ~0."""
+    sem = [fronteira(d, pares_entre(a, d.uf), X, "uf") for d, a, X in (_grade(0.0, 8.0) for _ in range(30))]
+    com = [fronteira(d, pares_entre(a, d.uf), X, "uf") for d, a, X in (_grade(3.0, 8.0) for _ in range(30))]
+    assert abs(np.mean(np.sign(sem) * np.square(sem))) < 1.0       # salto² médio ≈ 0
+    assert abs(np.sqrt(np.mean(np.sign(com) * np.square(com))) - 3.0) < 0.6
 
 
 def test_mesf_ortogonal_a_constante():

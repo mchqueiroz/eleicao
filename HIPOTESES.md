@@ -12,7 +12,7 @@
 ## 0. Declaração de transparência (preencher antes de congelar)
 
 - Este documento foi redigido **depois** do início da divulgação dos resultados provisórios do 1º turno de 2026 (04/10/2026, a partir das 17h).
-- O autor viu: [PREENCHER: nada / resultado nacional / resultados por UF / mapas por município / pesquisas de opinião].
+- O autor viu: o resultado nacional e os resultados por UF do 1º turno. Não viu mapas por município nem pesquisas de opinião.
 - Nenhuma análise com dados municipais de 2026 foi feita antes deste documento.
 - Os dados de 2014, 2018 e 2022 já foram baixados e agregados por município (contagens apenas, sem nenhum modelo dos eixos abaixo).
 - Antes do congelamento, rodaram sobre 2014–2022 apenas as análises **exploratórias** de §7 (H1, H3, H7; ver `data/output/exploratorio/relatorio.md`) e um mapa público de métricas descritivas (|margem|, abstenção, NEC). Os eixos 1 a 4 só foram executados em dados com desfechos embaralhados, para testar o código.
@@ -37,8 +37,10 @@
   - *Refutada se* o IC90% da tendência incluir 0 ou for negativo.
 - **T2, Território persistente:** entre pares de municípios contíguos separados por divisa estadual, a diferença em s_A, condicionada à estrutura, é ≥ 3 p.p. em 2026 e não cai significativamente desde 2014.
   - *Modelo:* efeito fixo do par, o salto da UF como parâmetro e balanceamento de covariáveis reportado.
-  - *Medida:* salto médio |γ_a − γ_b| nas divisas reais **menos** o mesmo salto em fronteiras-placebo (cada UF partida na mediana da longitude dos centroides). O placebo remove o viés de |·| e o efeito de qualquer linha arbitrária.
-  - *Refutada se* (real − placebo) tiver IC90% dentro de [−3, 3] p.p.
+  - *Medida:* salto quadrático médio nas divisas reais, √(média de (γ̂_a − γ̂_b)² − Var(γ̂_a − γ̂_b)), com a variância exata do estimador (os pares que compartilham um município têm erros correlacionados). Subtrair a variância remove o viés do ruído, que infla qualquer salto estimado.
+  - *Validação:* a mesma medida em fronteiras-placebo (cada UF partida na mediana da longitude dos centroides) deve ter IC90% contendo 0. Se não contiver, a medida está enviesada nos dados reais (por exemplo, por ruído espacialmente correlacionado) e isso é reportado ao lado do veredito do T2.
+  - *Refutada se* o salto corrigido tiver IC90% dentro de [−3, 3] p.p.
+  - *Nota de desenho (antes do congelamento):* a versão anterior desta medida (média de |γ̂_a − γ̂_b| real menos placebo) subestimava um salto verdadeiro de 3 p.p. em 1,4 a 2 p.p. na simulação de poder (`geovoto.poder`). Ela foi trocada antes da tag; o teste `test_fronteira_sem_vies_com_ruido_alto` falha com a versão anterior.
 - T1 e T2 não são mutuamente exclusivas. Os quatro resultados possíveis são reportados.
 
 ## 3. Eixo 2: Onde está a divisão

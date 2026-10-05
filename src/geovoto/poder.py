@@ -66,8 +66,8 @@ def poder_t1(est, k_final: float, ruido: float, rng) -> dict:
 
 
 def poder_t2(est, arestas, centro, salto_pp: float, ruido_pp: float, rng) -> dict:
-    """Efeito de UF ~ N(0, J²) com E|γa − γb| = salto_pp; mesmo J no primeiro e no último ano."""
-    J = salto_pp / (2 / np.sqrt(np.pi))
+    """Efeito de UF ~ N(0, J²) com salto quadrático médio √E(γa − γb)² = salto_pp; mesmo J nos dois anos."""
+    J = salto_pp / np.sqrt(2)
     veredictos = []
     for _ in range(N_REP):
         difs = {}
@@ -80,7 +80,7 @@ def poder_t2(est, arestas, centro, salto_pp: float, ruido_pp: float, rng) -> dic
                          + ruido_pp * rng.normal(size=len(d)))
             dd, reais, pl = pares_fronteira(d, arestas, centro)
             b = bootstrap_fronteira(dd, reais, pl, S, N_BOOT, int(rng.integers(1e9)))
-            difs[ano] = np.array([x["real"] - x["placebo"] for x in b])
+            difs[ano] = np.array([x["real"] for x in b])
         veredictos.append(classifica_t2(difs[max(est)], difs[min(est)])[0])
     return {"delta_verdadeiro": salto_pp, **_proporcoes(veredictos)}
 
