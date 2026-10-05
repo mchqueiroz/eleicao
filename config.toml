@@ -1,0 +1,8 @@
+# Configuração da pipeline (lida por geovoto/__init__.py)
+raw_dir = "data/raw"
+processed_dir = "data/processed"
+
+anos = [2014, 2018, 2022]   # 2026 entra quando os arquivos finais do TSE saírem
+
+tse_cdn = "https://cdn.tse.jus.br/estatistica/sead/odsele"
+bd_municipios = "https://storage.googleapis.com/basedosdados-public/one-click-download/br_bd_diretorios_brasil/municipio/municipio.csv.gz"

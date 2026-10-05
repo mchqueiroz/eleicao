@@ -1,0 +1,33 @@
+# Pipeline: make all  (download → painel → test)
+ANOS := 2014 2018 2022
+CDN  := https://cdn.tse.jus.br/estatistica/sead/odsele
+BD   := https://storage.googleapis.com/basedosdados-public/one-click-download/br_bd_diretorios_brasil/municipio/municipio.csv.gz
+TSE_ZIPS := $(foreach a,$(ANOS),data/raw/tse/$(a)/detalhe_votacao_munzona_$(a).zip data/raw/tse/$(a)/votacao_candidato_munzona_$(a).zip)
+
+.PHONY: all download painel test checksums verificar
+all: painel test
+
+download: $(TSE_ZIPS) data/raw/bd/municipio.csv.gz
+
+data/raw/tse/%.zip:
+	@mkdir -p $(dir $@)
+	curl -sSfL -o $@ "$(CDN)/$(patsubst %_$(notdir $(patsubst %/,%,$(dir $@))).zip,%,$(notdir $@))/$(notdir $@)"
+
+data/raw/bd/municipio.csv.gz:
+	@mkdir -p $(dir $@)
+	curl -sSfL -o $@ "$(BD)"
+
+# grava os hashes dos brutos baixados (rodar uma vez; versionar raw.sha256)
+checksums: download
+	sha256sum $(TSE_ZIPS) data/raw/bd/municipio.csv.gz > raw.sha256
+
+verificar:
+	sha256sum -c raw.sha256
+
+data/processed/painel_presidente.parquet: download src/geovoto/tse.py config.toml
+	uv run python -m geovoto.tse
+
+painel: data/processed/painel_presidente.parquet
+
+test: painel
+	uv run pytest -q

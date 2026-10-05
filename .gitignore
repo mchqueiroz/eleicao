@@ -1,0 +1,8 @@
+# dados ficam fora do git (ver DATA.md e data/raw/**/SHA256SUMS)
+data/
+legacy/data/
+venv/
+.venv/
+__pycache__/
+*.pyc
+.pytest_cache/
