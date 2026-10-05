@@ -9,10 +9,10 @@
 | Parte | Situação |
 |---|---|
 | Dados 2014–2022 (município, local de votação, Censos 2010/2022, malha, REGIC, RAIS, Bolsa Família, prefeitos) | prontos, com testes de consistência e conferência externa (`DATA.md`) |
-| 1º turno 2026 provisório | coletado; refazer `make provisorio2026` com a apuração completa |
-| Previsão do 2º turno | modelo validado; `make pacote-previsao` gera o pacote congelável (publicar até 22/10) |
+| 1º turno 2026 provisório | coletado com 100% apurado (snapshot 05/10 12:53) |
+| Previsão do 2º turno | pacote congelado no commit `7112178` (`reports/previsao_2T_2026/`); falta publicar até 22/10 |
 | Eixos 1–4, robustez e veredito automático | implementados e testados em simulação; **bloqueados até a tag `prereg-v1`** |
-| Poder do desenho | `make poder` (desfechos simulados); usar para revisar os limiares **antes** da tag |
+| Poder do desenho | rodado em 05/10 (`data/output/poder/poder.md`). T1: decide bem longe do limiar (Δ ≤ 2 p.p. refutada, Δ ≥ 11 p.p. suportada), dividido entre 3 e 7 p.p. T2: salto de 3 p.p. sai quase sempre refutado e o de 5 p.p. é suportado em 40–60%. **Revisar o T2 antes da tag** |
 | Exploratórias H1, H3, H7 | rodadas (`data/output/exploratorio/`); rascunho do artigo curto em `reports/` |
 | Mapa público | publicado como artefato privado |
 | Pendências do autor | §0 do pré-registro, tag `prereg-v1`, decisão sobre o histórico do GitHub |
