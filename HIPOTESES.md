@@ -86,3 +86,4 @@ Falácia ecológica (as afirmações valem para lugares, não para eleitores); M
 ## Desvios
 
 - 2026-10-05, depois da tag: `geovoto.veredito` passou a marcar como **PARCIAL** o veredito calculado sem 2026. É só um rótulo; nenhum critério, medida ou limiar mudou.
+- 2026-10-05, depois da tag: o BYM2 passou a usar o sampler NUTS do `nutpie` em vez do NUTS padrão do PyMC, porque este não terminou nem um modelo em 4 h. Modelo, prioris, número de amostras e critérios de convergência são os mesmos.

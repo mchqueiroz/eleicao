@@ -41,7 +41,7 @@ def modelo(y, n, X, uf_idx, W, s) -> pm.Model:
 def ajustar(y, n, X, uf_idx, W, draws=1000, tune=1000, chains=4, seed=CONFIG["seed"], s=None):
     with modelo(y, n, X, uf_idx, W, fator_escala(W) if s is None else s):
         return pm.sample(draws=draws, tune=tune, chains=chains, random_seed=seed,
-                         target_accept=0.9, progressbar=False)
+                         target_accept=0.9, progressbar=False, nuts_sampler="nutpie")
 
 
 def diagnostico(idata, vars_=("alfa", "beta", "sd_uf", "sigma", "rho")) -> dict:
@@ -70,4 +70,5 @@ if __name__ == "__main__":
             idata = ajustar(d[alvo].to_numpy(), d.validos.to_numpy(), X, uf_idx, W, s=s)
             idata.to_netcdf(saida / f"{ano}_{alvo}.nc")
             resumo.append({"ano": ano, "alvo": alvo, **diagnostico(idata)})
+            print(resumo[-1], flush=True)
     pd.DataFrame(resumo).to_csv(saida / "diagnosticos.csv", index=False)
