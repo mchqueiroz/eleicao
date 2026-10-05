@@ -10,12 +10,12 @@
 |---|---|
 | Dados 2014–2022 (município, local de votação, Censos 2010/2022, malha, REGIC, RAIS, Bolsa Família, prefeitos) | prontos, com testes de consistência e conferência externa (`DATA.md`) |
 | 1º turno 2026 provisório | coletado com 100% apurado (snapshot 05/10 12:53) |
-| Previsão do 2º turno | pacote congelado no commit `7112178` (`reports/previsao_2T_2026/`); falta publicar até 22/10 |
-| Eixos 1–4, robustez e veredito automático | implementados e testados em simulação; **bloqueados até a tag `prereg-v1`** |
+| Previsão do 2º turno | pacote congelado em `reports/previsao_2T_2026/`, publicado na release `prereg-v1` |
+| Eixos 1–4, robustez e veredito automático | pré-registro congelado (tag `prereg-v1`); `make eixos veredito bym2` liberado |
 | Poder do desenho | rodado em 05/10 (`data/output/poder/poder.md`). T1: refutada com Δ ≤ 2 p.p., suportada com Δ ≥ 11 p.p., dividida entre 3 e 7 p.p. T2: a medida antiga subestimava o salto e foi corrigida; agora um salto de 3 p.p. sai suportado em 30–50% (limiar) e um de 5 p.p. em 80–95% |
 | Exploratórias H1, H3, H7 | rodadas (`data/output/exploratorio/`); rascunho do artigo curto em `reports/` |
 | Mapa público | publicado como artefato privado |
-| Pendências do autor | §0 do pré-registro, tag `prereg-v1`, decisão sobre o histórico do GitHub |
+| Histórico do GitHub | reescrito em 05/10 sem dados (backup em `../backup-eleicao-antes-reescrita-2026-10-05.bundle`) |
 
 ---
 

@@ -1,8 +1,8 @@
 # Previsão municipal do 2º turno presidencial de 2026
 
-- Gerado em: 2026-10-05 14:43 (horário local)
+- Gerado em: 2026-10-05 15:42 (horário local)
 - Dados do 1º turno: sistema de divulgação do TSE, snapshot 05/10/2026 12:53:07 (0 municípios abaixo de 100% apurados)
-- Código: commit 18e80cf145f33a844aaed10025ddcfe4556a62f8
+- Código: commit 1d54a581f7845a327758fec80c453b7bc95e88f0
 - Alvos: abstenção no 2º turno (abstenções ÷ aptos) e |margem| = |votos do 1º − do 2º colocado do 1º turno| ÷ válidos do 2º turno. Sem nomes e sem sinal.
 - Colunas `_q2.5 … _q97.5`: quantis da distribuição prevista; `_baseline`: regra simples pré-registrada (HIPOTESES.md §6), congelada aqui para a comparação.
 - Avaliação pré-escrita: `python -m geovoto.previsao avaliar` (MAE ponderado por aptos contra o baseline, perda pinball média nos quantis e cobertura dos intervalos de 80% e 95%).
