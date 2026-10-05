@@ -31,3 +31,11 @@ painel: data/processed/painel_presidente.parquet
 
 test: painel
 	uv run pytest -q
+
+# 2026: snapshot provisório do 1º turno (repetir até 100% totalizado) e previsão do 2º turno
+.PHONY: provisorio2026 previsao
+provisorio2026:
+	uv run python -m geovoto.divulga 1
+
+previsao: painel
+	uv run python -m geovoto.previsao

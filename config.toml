@@ -6,3 +6,5 @@ anos = [2014, 2018, 2022]   # 2026 entra quando os arquivos finais do TSE saíre
 
 tse_cdn = "https://cdn.tse.jus.br/estatistica/sead/odsele"
 bd_municipios = "https://storage.googleapis.com/basedosdados-public/one-click-download/br_bd_diretorios_brasil/municipio/municipio.csv.gz"
+
+seed = 20261004
