@@ -4,6 +4,21 @@
 
 ---
 
+## Estado atual (2026-10-05)
+
+| Parte | Situação |
+|---|---|
+| Dados 2014–2022 (município, local de votação, Censos 2010/2022, malha, REGIC, RAIS, Bolsa Família, prefeitos) | prontos, com testes de consistência e conferência externa (`DATA.md`) |
+| 1º turno 2026 provisório | coletado; refazer `make provisorio2026` com a apuração completa |
+| Previsão do 2º turno | modelo validado; `make pacote-previsao` gera o pacote congelável (publicar até 22/10) |
+| Eixos 1–4, robustez e veredito automático | implementados e testados em simulação; **bloqueados até a tag `prereg-v1`** |
+| Poder do desenho | `make poder` (desfechos simulados); usar para revisar os limiares **antes** da tag |
+| Exploratórias H1, H3, H7 | rodadas (`data/output/exploratorio/`); rascunho do artigo curto em `reports/` |
+| Mapa público | publicado como artefato privado |
+| Pendências do autor | §0 do pré-registro, tag `prereg-v1`, decisão sobre o histórico do GitHub |
+
+---
+
 ## 0. Antes de tudo: o que encontrei no repositório
 
 Leia isto antes do resto, porque muda a ordem de prioridade.
