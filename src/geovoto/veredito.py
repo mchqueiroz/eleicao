@@ -132,6 +132,11 @@ def markdown(v: dict) -> str:
 
 if __name__ == "__main__":
     pasta = ROOT / "data" / "output" / "eixos"
-    v = veredito(json.loads((pasta / "resultados.json").read_text()))
-    (pasta / "veredito.md").write_text(markdown(v))
-    print(markdown(v))
+    r = json.loads((pasta / "resultados.json").read_text())
+    anos = sorted(int(a) for a in r if not str(a).startswith("_"))
+    aviso = "" if max(anos) >= 2026 else (
+        f"> **PARCIAL ({', '.join(map(str, anos))}).** O pré-registro avalia as teses até 2026; "
+        "este veredito não é o final. Refazer quando os arquivos finais de 2026 entrarem em `config.toml`.\n\n")
+    texto = aviso + markdown(veredito(r))
+    (pasta / "veredito.md").write_text(texto)
+    print(texto)

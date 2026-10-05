@@ -85,4 +85,4 @@ Falácia ecológica (as afirmações valem para lugares, não para eleitores); M
 
 ## Desvios
 
-(nenhum até o momento)
+- 2026-10-05, depois da tag: `geovoto.veredito` passou a marcar como **PARCIAL** o veredito calculado sem 2026. É só um rótulo; nenhum critério, medida ou limiar mudou.
