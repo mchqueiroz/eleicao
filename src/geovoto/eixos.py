@@ -14,6 +14,7 @@ import numpy as np
 import pandas as pd
 
 from geovoto import CONFIG, PROCESSED, ROOT
+from geovoto.espacial import adjacencia
 from geovoto.metricas import bootstrap_municipios, decompor_variancia, isolamento_exposicao
 
 # Covariáveis com definição igual em 2010 e 2022 (ver geovoto.ibge)
@@ -72,10 +73,7 @@ def shapley(y, blocos: dict, w) -> dict:
 
 def mesf(arestas: pd.DataFrame, ids: pd.Index, limiares=(MESF_LIMIAR,)) -> dict:
     """Autovetores de MWM com I de Moran alto (filtro espacial de Griffith), por limiar."""
-    pos = pd.Series(np.arange(len(ids)), index=ids)
-    a = arestas[arestas.origem.isin(ids) & arestas.destino.isin(ids)]
-    W = np.zeros((len(ids), len(ids)))
-    W[pos[a.origem].to_numpy(), pos[a.destino].to_numpy()] = 1
+    W = adjacencia(arestas, ids)
     M = np.eye(len(ids)) - 1 / len(ids)
     val, vec = np.linalg.eigh(M @ W @ M)
     return {t: vec[:, val >= t * val.max()] for t in limiares}
@@ -139,9 +137,22 @@ def eixo1_e_4(d: pd.DataFrame, V: np.ndarray, arestas, centro, alvos=ALVOS) -> d
         d = d.assign(placebo=d.uf + lado)
         pl = pares_entre(arestas, d.placebo)
         pl = pl[d.uf[pl.origem].to_numpy() == d.uf[pl.destino].to_numpy()]
-        S = b1["estrutura"]
-        out["fronteira_pp"] = {"real": fronteira(d, pares_entre(arestas, d.uf), S, "uf"),
+        S, reais = b1["estrutura"], pares_entre(arestas, d.uf)
+        out["fronteira_pp"] = {"real": fronteira(d, reais, S, "uf"),
                                "placebo": fronteira(d, pl, S, "placebo")}
+        # IC de (real − placebo): reamostra divisas inteiras (par de UFs) e, no placebo, UFs inteiras
+        rng = np.random.default_rng(CONFIG["seed"])
+        div_real = [tuple(sorted(x)) for x in zip(d.uf[reais.origem], d.uf[reais.destino])]
+        div_pl = d.uf[pl.origem].to_numpy()
+
+        def reamostra(p, rotulos):
+            grupos = pd.Series(np.arange(len(p))).groupby(pd.Series(rotulos)).apply(list).tolist()
+            idx = np.concatenate([grupos[k] for k in rng.integers(0, len(grupos), len(grupos))])
+            return p.iloc[idx]
+
+        out["fronteira_boot"] = [
+            {"real": fronteira(d, reamostra(reais, div_real), S, "uf"),
+             "placebo": fronteira(d, reamostra(pl, div_pl), S, "placebo")} for _ in range(N_BOOT)]
     return out
 
 
@@ -152,7 +163,8 @@ def bootstrap_eixo1_4(d: pd.DataFrame, V: np.ndarray, n: int, seed: int) -> list
     for _ in range(n):
         idx = np.concatenate([rng.choice(p, len(p)) for p in pos_uf])
         r = eixo1_e_4(d.iloc[idx], V[idx], None, None, ALVOS_BOOT)
-        reps.append({e: {a: r[e][a]["shapley"] for a in ALVOS_BOOT} for e in ("eixo1", "eixo4")})
+        reps.append({e: {a: {k: r[e][a][k] for k in ("shapley", "unicos", "compartilhado")}
+                         for a in ALVOS_BOOT} for e in ("eixo1", "eixo4")})
     return reps
 
 
@@ -176,23 +188,47 @@ def rodar() -> dict:
         r["eixo1_4_boot"] = bootstrap_eixo1_4(d, V, N_BOOT, CONFIG["seed"])
         loc = locais.query("ano == @ano & turno == 1").assign(uf=lambda x: x.cd_municipio_tse.map(uf_tse))
         r["eixo2"] = decompor_variancia(loc)
-        r["eixo2_boot"] = bootstrap_municipios(loc, decompor_variancia, N_BOOT, CONFIG["seed"]).to_dict("list")
         r["eixo3"] = {"municipio": isolamento_exposicao(d), "local": isolamento_exposicao(loc)}
-        r["eixo3_boot"] = bootstrap_municipios(loc, isolamento_exposicao, N_BOOT, CONFIG["seed"]).to_dict("list")
+        boot = bootstrap_municipios(loc, {"eixo2": decompor_variancia, "eixo3": isolamento_exposicao},
+                                    N_BOOT, CONFIG["seed"])
+        r["eixo2_boot"], r["eixo3_boot"] = boot["eixo2"].to_dict("list"), boot["eixo3"].to_dict("list")
         r["n_autovetores_mesf"] = int(V.shape[1])
         resultados[ano] = r
     return resultados
 
 
+TAG = "prereg-v1"
+PROTEGIDOS = ["HIPOTESES.md", "config.toml", "src/geovoto"]
+
+
+def _git(*args) -> subprocess.CompletedProcess:
+    return subprocess.run(["git", *args], cwd=ROOT, capture_output=True, text=True)
+
+
 def prereg_congelado() -> bool:
-    tags = subprocess.run(["git", "tag", "-l", "prereg-v1"], cwd=ROOT, capture_output=True, text=True)
-    return tags.stdout.strip() == "prereg-v1"
+    return _git("tag", "-l", TAG).stdout.strip() == TAG
+
+
+def verificar_prereg() -> dict:
+    """Bloqueia se a tag não existe, não está no histórico de HEAD ou há mudanças não commitadas
+    nos arquivos protegidos. Devolve a proveniência (commit e arquivos alterados desde a tag),
+    que vai junto dos resultados para ser declarada na seção "Desvios"."""
+    if not prereg_congelado():
+        sys.exit(f"Bloqueado: congele o pré-registro (git tag {TAG}) antes de rodar a análise.")
+    if _git("merge-base", "--is-ancestor", TAG, "HEAD").returncode != 0:
+        sys.exit(f"Bloqueado: HEAD não descende de {TAG}.")
+    if _git("status", "--porcelain", "--", *PROTEGIDOS).stdout.strip():
+        sys.exit("Bloqueado: há mudanças não commitadas em " + ", ".join(PROTEGIDOS))
+    alterados = _git("diff", "--name-only", TAG, "HEAD", "--", *PROTEGIDOS).stdout.split()
+    if alterados:
+        print("AVISO: arquivos alterados desde o pré-registro (declarar em Desvios):", alterados)
+    return {"commit": _git("rev-parse", "HEAD").stdout.strip(), "alterados_desde_prereg": alterados}
 
 
 if __name__ == "__main__":
-    if not prereg_congelado():
-        sys.exit("Bloqueado: congele o pré-registro (git tag prereg-v1) antes de rodar os eixos.")
+    proveniencia = verificar_prereg()
     saida = ROOT / "data" / "output" / "eixos"
     saida.mkdir(parents=True, exist_ok=True)
-    (saida / "resultados.json").write_text(json.dumps(rodar(), indent=1, default=float))
+    resultados = {"_proveniencia": proveniencia} | rodar()
+    (saida / "resultados.json").write_text(json.dumps(resultados, indent=1, default=float))
     print("resultados em", saida / "resultados.json")

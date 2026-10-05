@@ -9,7 +9,8 @@ def _municipios(pi: float) -> pd.DataFrame:
     A1, B1, O1 = np.array([500, 300, 100]), np.array([300, 500, 100]), np.array([200, 200, 800])
     return pd.DataFrame({"cd_municipio_tse": [1, 2, 3], "uf": "XX", "aptos": 1000,
                          "A1": A1, "B1": B1, "O1": O1, "ab1": 0.2,
-                         "sA2": (A1 + pi * O1) / (A1 + B1 + O1)})
+                         "sA2": (A1 + pi * O1) / (A1 + B1 + O1),
+                         "A2": A1 + pi * O1, "B2": B1 + (1 - pi) * O1})
 
 
 def test_pi_implicito_recupera_pi():

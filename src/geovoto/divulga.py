@@ -6,32 +6,21 @@ Cada execução grava um snapshot imutável em data/raw/tse/2026/divulga/<timest
 import hashlib
 import json
 import sys
-import time
-import urllib.request
 from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime
 from pathlib import Path
 
 import pandas as pd
 
-from geovoto import PROCESSED, RAW
+from geovoto import PROCESSED, RAW, http_get
+from geovoto.tse import blocos_e_nec
 
 BASE = "https://resultados.tse.jus.br/oficial/ele2026"
 ELEICAO = {1: "6257", 2: "6258"}  # presidente, 1º e 2º turno (de comum/config/ele-c.json)
 DIR = RAW / "tse" / "2026" / "divulga"
 
 
-def _get(url: str, tentativas: int = 4) -> bytes:
-    for i in range(tentativas):
-        try:
-            req = urllib.request.Request(url, headers={"User-Agent": "geovoto (pesquisa academica)"})
-            with urllib.request.urlopen(req, timeout=30) as r:
-                return r.read()
-        except Exception:
-            if i == tentativas - 1:
-                raise
-            time.sleep(2**i)
-    raise AssertionError("inalcançável")
+_get = http_get
 
 
 def municipios(turno: int = 1) -> pd.DataFrame:
@@ -90,14 +79,15 @@ def ler(destino: Path, turno: int = 1) -> tuple[pd.DataFrame, pd.DataFrame]:
 
 def painel(destino: Path, turno: int = 1) -> pd.DataFrame:
     df, v = ler(destino, turno)
-    ordem = v.groupby("nr_candidato").votos.sum().sort_values(ascending=False)
-    bloco = {ordem.index[0]: "A", ordem.index[1]: "B"}  # posicional; nomes não entram no painel
-    ab = (v.assign(bloco=v.nr_candidato.map(bloco)).dropna(subset=["bloco"])
-            .pivot_table(index="cd_municipio_tse", columns="bloco", values="votos", aggfunc="sum")
-            .rename(columns={"A": "votos_A", "B": "votos_B"}).reset_index())
-    p = v.votos / v.groupby("cd_municipio_tse").votos.transform("sum")
-    nec = (1 / (p**2).groupby(v.cd_municipio_tse).sum()).rename("nec").reset_index()
-    out = df.merge(ab, on="cd_municipio_tse", how="left").merge(nec, on="cd_municipio_tse", how="left")
+    # A/B = 1º/2º colocados nacionais NO 1º TURNO (como em geovoto.tse); no 2º turno reusa o ranking
+    ranking = PROCESSED / "candidatos_2026.parquet"
+    if turno == 1:
+        ordem = v.groupby("nr_candidato").votos.sum().sort_values(ascending=False)
+        pd.DataFrame({"nr_candidato": ordem.index, "posicao_1t": range(1, len(ordem) + 1),
+                      "snapshot": df.snapshot.max()}).to_parquet(ranking, index=False)
+    r = pd.read_parquet(ranking).set_index("posicao_1t").nr_candidato
+    out = df.merge(blocos_e_nec(v, ["cd_municipio_tse"], {r[1]: "A", r[2]: "B"}),
+                   on="cd_municipio_tse", how="left")
     PROCESSED.mkdir(parents=True, exist_ok=True)
     out.to_parquet(PROCESSED / f"painel_2026_t{turno}_provisorio.parquet", index=False)
     return out

@@ -61,15 +61,19 @@ def painel_ano(ano: int) -> tuple[pd.DataFrame, pd.DataFrame]:
     a, b = ordem.nr_candidato.iloc[0], ordem.nr_candidato.iloc[1]
     cand = ordem.assign(ano=ano, posicao_1t=range(1, len(ordem) + 1))
 
-    v = v.assign(bloco=v.nr_candidato.map({a: "A", b: "B"}))
-    ab = v.pivot_table(index=CHAVE, columns="bloco", values="votos", aggfunc="sum", fill_value=0)
-    ab = ab.rename(columns={"A": "votos_A", "B": "votos_B"}).reset_index()
-    # número efetivo de candidatos (Laakso-Taagepera) sobre votos nominais
-    p = v.votos / v.groupby(CHAVE).votos.transform("sum")
-    nec = (1 / (p**2).groupby([v[c] for c in CHAVE]).sum()).rename("nec").reset_index()
-
-    df = detalhe(ano).merge(ab, on=CHAVE, how="left").merge(nec, on=CHAVE, how="left")
+    df = detalhe(ano).merge(blocos_e_nec(v, CHAVE, {a: "A", b: "B"}), on=CHAVE, how="left")
     return df, cand
+
+
+def blocos_e_nec(v: pd.DataFrame, chave: list, bloco: dict) -> pd.DataFrame:
+    """Votos de A e B (0 se ausentes) e número efetivo de candidatos (Laakso-Taagepera) por chave."""
+    ab = (v.assign(bloco=v.nr_candidato.map(bloco)).dropna(subset=["bloco"])
+            .pivot_table(index=chave, columns="bloco", values="votos", aggfunc="sum", fill_value=0)
+            .reindex(columns=["A", "B"], fill_value=0)
+            .rename(columns={"A": "votos_A", "B": "votos_B"}))
+    p = v.votos / v.groupby(chave).votos.transform("sum")
+    nec = (1 / (p**2).groupby([v[c] for c in chave]).sum()).rename("nec")
+    return ab.join(nec, how="outer").fillna({"votos_A": 0, "votos_B": 0}).reset_index()
 
 
 def construir() -> pd.DataFrame:

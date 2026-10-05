@@ -39,3 +39,11 @@ def test_isolamento_casos_extremos():
     uni = pd.DataFrame({"votos_A": [6, 3], "votos_B": [4, 2], "validos": [10, 5]})
     r = isolamento_exposicao(uni)
     assert np.isclose(r["isolamento_A"], 0.6) and np.isclose(r["exposicao_A_B"], 0.4)
+
+
+def test_bootstrap_rotula_copias_e_aplica_todas_as_metricas():
+    from geovoto.metricas import bootstrap_municipios
+    d = _simular(0.4, 0.3, 0.2, n_votos=200).assign(validos=lambda x: x.votos_A + x.votos_B)
+    out = bootstrap_municipios(d, {"var": decompor_variancia, "iso": isolamento_exposicao}, n=5)
+    assert set(out) == {"var", "iso"} and len(out["var"]) == 5 and len(out["iso"]) == 5
+    assert np.allclose(out["var"][["parcela_uf", "parcela_municipio", "parcela_local"]].sum(1), 1)

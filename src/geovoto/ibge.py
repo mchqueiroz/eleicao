@@ -6,12 +6,10 @@ Com uma categoria por classificação, o valor é lido direto; com duas, a prime
 Respostas brutas ficam em data/raw/ibge/sidra/.
 """
 import json
-import time
-import urllib.request
 
 import pandas as pd
 
-from geovoto import PROCESSED, RAW
+from geovoto import PROCESSED, RAW, http_get
 
 API = "https://servicodados.ibge.gov.br/api/v3/agregados"
 CACHE = RAW / "ibge" / "sidra"
@@ -60,16 +58,8 @@ CONSULTAS_2010 = {
 }
 
 
-def _get(url: str) -> list:
-    for i in range(4):
-        try:
-            with urllib.request.urlopen(url, timeout=120) as r:
-                return json.loads(r.read())
-        except Exception:
-            if i == 3:
-                raise
-            time.sleep(2**i)
-    raise AssertionError("inalcançável")
+class SemDados(Exception):
+    """A API respondeu sem dados (período ainda não publicado ou inexistente na tabela)."""
 
 
 def _num(v: str) -> float:
@@ -89,8 +79,11 @@ def _serie(tabela: int, var: int, cls: dict, periodo: int) -> pd.Series:
     nome = f"t{tabela}_v{var}_{periodo}_" + c.replace("|", "_").replace("[", "-").replace("]", "")
     arq = CACHE / f"{nome}.json"
     if not arq.exists():
+        dados = json.loads(http_get(url, timeout=120))
+        if not dados or not dados[0]["resultados"][0]["series"]:
+            raise SemDados(url)          # não grava: um ano futuro precisa ser buscado de novo
         CACHE.mkdir(parents=True, exist_ok=True)
-        arq.write_text(json.dumps(_get(url)))
+        arq.write_text(json.dumps(dados))
     series = json.loads(arq.read_text())[0]["resultados"][0]["series"]
     return pd.Series({int(s["localidade"]["id"]): _num(s["serie"][str(periodo)]) for s in series})
 
@@ -133,7 +126,7 @@ def anual(tabela: int, var: int, anos) -> pd.DataFrame:
     for ano in anos:
         try:
             s = _serie(tabela, var, {}, ano)
-        except Exception:      # ano sem dado na tabela (ex.: estimativas não saem em ano de censo)
+        except SemDados:       # ano sem dado na tabela (ex.: estimativas não saem em ano de censo)
             continue
         linhas.append(s.rename("valor").rename_axis("cd_municipio_ibge").reset_index().assign(ano=ano))
     return pd.concat(linhas, ignore_index=True)

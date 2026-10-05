@@ -11,14 +11,7 @@ import pandas as pd
 import pymc as pm
 
 from geovoto import CONFIG, PROCESSED, ROOT
-
-
-def adjacencia(arestas: pd.DataFrame, ids: pd.Index) -> np.ndarray:
-    pos = pd.Series(np.arange(len(ids)), index=ids)
-    a = arestas[arestas.origem.isin(ids) & arestas.destino.isin(ids)]
-    W = np.zeros((len(ids), len(ids)))
-    W[pos[a.origem].to_numpy(), pos[a.destino].to_numpy()] = 1
-    return W
+from geovoto.espacial import adjacencia
 
 
 def fator_escala(W: np.ndarray) -> float:
@@ -45,8 +38,8 @@ def modelo(y, n, X, uf_idx, W, s) -> pm.Model:
     return m
 
 
-def ajustar(y, n, X, uf_idx, W, draws=1000, tune=1000, chains=4, seed=CONFIG["seed"]):
-    with modelo(y, n, X, uf_idx, W, fator_escala(W)):
+def ajustar(y, n, X, uf_idx, W, draws=1000, tune=1000, chains=4, seed=CONFIG["seed"], s=None):
+    with modelo(y, n, X, uf_idx, W, fator_escala(W) if s is None else s):
         return pm.sample(draws=draws, tune=tune, chains=chains, random_seed=seed,
                          target_accept=0.9, progressbar=False)
 
@@ -58,22 +51,23 @@ def diagnostico(idata, vars_=("alfa", "beta", "sd_uf", "sigma", "rho")) -> dict:
 
 
 if __name__ == "__main__":
-    from geovoto.eixos import DIMENSOES, base, prereg_congelado
-    if not prereg_congelado():
-        sys.exit("Bloqueado: congele o pré-registro (git tag prereg-v1) antes de rodar o BYM2.")
+    from geovoto.eixos import DIMENSOES, base, verificar_prereg
+    verificar_prereg()
     arestas = pd.read_parquet(PROCESSED / "vizinhanca.parquet")
     saida = ROOT / "data" / "output" / "bym2"
     saida.mkdir(parents=True, exist_ok=True)
     cols = sum(DIMENSOES.values(), [])
-    resumo = []
+    resumo, ids = [], None
     for ano in CONFIG["anos"]:
         d = base(ano)
-        W = adjacencia(arestas, d.index)
+        if ids is None or not d.index.equals(ids):          # grafo igual entre anos: escala uma vez
+            W, ids = adjacencia(arestas, d.index), d.index
+            s = fator_escala(W)
         X = d[cols].to_numpy(float)
         X = (X - X.mean(0)) / X.std(0)
         uf_idx = d.uf.astype("category").cat.codes.to_numpy()
         for alvo in ["votos_A", "votos_B"]:
-            idata = ajustar(d[alvo].to_numpy(), d.validos.to_numpy(), X, uf_idx, W)
+            idata = ajustar(d[alvo].to_numpy(), d.validos.to_numpy(), X, uf_idx, W, s=s)
             idata.to_netcdf(saida / f"{ano}_{alvo}.nc")
             resumo.append({"ano": ano, "alvo": alvo, **diagnostico(idata)})
     pd.DataFrame(resumo).to_csv(saida / "diagnosticos.csv", index=False)

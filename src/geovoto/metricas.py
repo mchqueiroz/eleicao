@@ -60,14 +60,23 @@ def isolamento_exposicao(u: pd.DataFrame) -> dict:
             "exposicao_B_A": float(np.sum(b / b.sum() * a / t))}
 
 
-def bootstrap_municipios(df: pd.DataFrame, f, n: int = 200, seed: int = 0) -> pd.DataFrame:
-    """Reamostra municípios (clusters) dentro de cada UF e reaplica f; uma linha por réplica."""
+def bootstrap_municipios(df: pd.DataFrame, fs: dict, n: int = 200, seed: int = 0) -> dict:
+    """Reamostra municípios (clusters) dentro de cada UF e aplica cada f de fs à mesma réplica.
+
+    Devolve {nome: DataFrame com uma linha por réplica}. Cada cópia sorteada de um município
+    recebe um rótulo novo, para não se fundir com outra cópia do mesmo município.
+    """
     rng = np.random.default_rng(seed)
-    grupos = {m: g for m, g in df.groupby("cd_municipio_tse")}
+    df = df.reset_index(drop=True)
+    linhas_mun = df.groupby("cd_municipio_tse").indices          # município → posições das linhas
     por_uf = df.groupby("uf").cd_municipio_tse.unique()
-    linhas = []
+    saida = {k: [] for k in fs}
     for _ in range(n):
-        partes = [grupos[m].assign(cd_municipio_tse=f"{m}_{k}")
-                  for muns in por_uf for k, m in enumerate(rng.choice(muns, len(muns)))]
-        linhas.append(f(pd.concat(partes, ignore_index=True)))
-    return pd.DataFrame(linhas)
+        sorteio = np.concatenate([rng.choice(m, len(m)) for m in por_uf])
+        partes = [linhas_mun[m] for m in sorteio]
+        idx = np.concatenate(partes)
+        rotulo = np.repeat(np.arange(len(partes)), [len(p) for p in partes])
+        rep = df.iloc[idx].assign(cd_municipio_tse=rotulo)
+        for k, f in fs.items():
+            saida[k].append(f(rep))
+    return {k: pd.DataFrame(v) for k, v in saida.items()}

@@ -44,15 +44,16 @@ def pares(painel: pd.DataFrame) -> pd.DataFrame:
     t1 = primeiro_turno(painel[painel.turno == 1])
     t2 = painel[painel.turno == 2].set_index(k)
     d = t1.set_index(k)
+    d["A2"], d["B2"] = t2.votos_A, t2.votos_B
     d["sA2"] = t2.votos_A / (t2.votos_A + t2.votos_B)
     d["ab2"] = t2.abstencoes / t2.aptos
     return d.reset_index()
 
 
 def pi_implicito(g: pd.DataFrame) -> float:
-    """π nacional que reproduz a participação nacional de A no 2º turno."""
+    """π nacional que reproduz a participação nacional de A no 2º turno (soma de votos)."""
     V = (g.A1 + g.B1 + g.O1).sum()
-    sA2 = np.average(g.sA2, weights=g.aptos)
+    sA2 = g.A2.sum() / (g.A2 + g.B2).sum()
     return float((sA2 * V - g.A1.sum()) / g.O1.sum())
 
 
@@ -149,10 +150,15 @@ def backtest(d: pd.DataFrame) -> pd.DataFrame:
 
 
 def prever(t1_2026: pd.DataFrame, par: dict) -> pd.DataFrame:
-    sim = simular(t1_2026, par)
-    out = t1_2026[["cd_municipio_tse"]].copy()
+    sem_dados = (t1_2026.A1 + t1_2026.B1 + t1_2026.O1 == 0) | t1_2026.ab1.isna()
+    if sem_dados.any():
+        print(f"AVISO: {sem_dados.sum()} município(s) sem seções apuradas no 1º turno: previsão vazia")
+    t = t1_2026.assign(A1=t1_2026.A1.where(~sem_dados, 1), B1=t1_2026.B1.where(~sem_dados, 1),
+                       ab1=t1_2026.ab1.where(~sem_dados, 0.5))   # valores neutros, descartados abaixo
+    sim = {k: np.where(sem_dados.to_numpy(), np.nan, v) for k, v in simular(t, par).items()}
+    out = t1_2026[["cd_municipio_tse"]].assign(sem_dados_1t=sem_dados.to_numpy())
     for alvo, s in sim.items():
-        for q, v in zip(QS, np.quantile(s, QS, axis=0)):
+        for q, v in zip(QS, np.nanquantile(s, QS, axis=0) if np.isnan(s).any() else np.quantile(s, QS, axis=0)):
             out[f"{alvo}_q{q * 100:g}"] = v.round(4)
     return out
 

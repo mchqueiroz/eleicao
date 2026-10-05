@@ -39,6 +39,16 @@ def vizinhanca(g: gpd.GeoDataFrame) -> pd.DataFrame:
     return df.drop_duplicates(["origem", "destino"]).reset_index(drop=True)
 
 
+def adjacencia(arestas: pd.DataFrame, ids: pd.Index):
+    """Matriz densa 0/1 do grafo restrita a ids, na ordem de ids (usada por MESF e BYM2)."""
+    import numpy as np
+    pos = pd.Series(np.arange(len(ids)), index=ids)
+    a = arestas[arestas.origem.isin(ids) & arestas.destino.isin(ids)]
+    W = np.zeros((len(ids), len(ids)))
+    W[pos[a.origem].to_numpy(), pos[a.destino].to_numpy()] = 1
+    return W
+
+
 def componentes(arestas: pd.DataFrame, nos) -> int:
     w = weights.W({n: [] for n in nos} | arestas.groupby("origem").destino.apply(list).to_dict(),
                   silence_warnings=True)

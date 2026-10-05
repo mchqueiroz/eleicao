@@ -65,7 +65,8 @@
 
 - **Alvos por município:** abstenção no 2º turno e |margem| no 2º turno, com IC80 e IC95. Sem sinal e sem nomes.
 - **Baseline pré-registrado:** abstenção_2T = abstenção_1T + Δ médio histórico da UF; |margem| por *swing* uniforme a partir do 1º turno, com transferências proporcionais.
-- **Modelo:** transferências 1T→2T por regressão ecológica com restrições, calibrada em 2014, 2018 e 2022.
+- **Modelo (`geovoto.previsao`):** os votos dos demais candidatos (O) vão para A com fração π: s_A2 = (A1 + π·O1)/(A1 + B1 + O1). π nacional segue a preditiva t (n−1 g.l.) das eleições de calibração (2014, 2018, 2022), com escala mínima de 0,10. O ruído municipal em logit tem variância τ² + κ²·o1² + ν/aptos. Abstenção: logit(ab2) = logit(ab1) + c + δ_mun + ε, com c nacional pela preditiva t (escala mínima de 0,05) e δ_mun = média histórica do município encolhida para a da UF (Bayes empírico). São 2.000 simulações (seed fixa). Na apuração parcial, a abstenção do 1º turno usa o eleitorado das seções já totalizadas.
+- **Validação já feita (deixando uma eleição de fora):** o modelo vence o baseline na margem nas 3 eleições e na abstenção em 2 de 3 (perde em 2014 por 0,05 p.p.). Os intervalos saíram conservadores (cobertura de 80% entre 0,89 e 0,99), porque com 2 eleições de treino a t tem 1 g.l.
 - **Avaliação:** MAE ponderado por aptos, CRPS e cobertura dos ICs, comparados ao baseline.
 - **Publicação:** até 22/10/2026 (máximo 24/10). Avaliação publicada qualquer que seja o resultado.
 
