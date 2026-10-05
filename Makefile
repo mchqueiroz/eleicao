@@ -57,3 +57,11 @@ vizinhanca:
 .PHONY: secoes
 secoes: painel
 	uv run python -m geovoto.secao
+
+# Análise dos eixos: o próprio código recusa rodar sem a tag git prereg-v1
+.PHONY: eixos bym2
+eixos: secoes censo vizinhanca
+	uv run python -m geovoto.eixos
+
+bym2: censo vizinhanca
+	uv run python -m geovoto.bym2

@@ -22,11 +22,11 @@
 - **Unidade:** município. 5.570 em 2014–2022 e 5.571 em 2026. Para comparações no tempo, Boa Esperança do Norte (MT) é agregado com Sorriso e Nova Ubiratã numa área mínima comparável (AMC). O exterior (UF = ZZ) fica fora.
 - **Blocos A/B:** A = 1º colocado nacional no 1º turno; B = 2º colocado. A definição é posicional, sem nomes nem partidos. Toda estimativa com sinal é reportada para A e para B.
 - **Desfechos:** (i) participação de A e de B nos votos válidos do 1º turno; (ii) comparecimento / aptos; (iii) |margem| = |s_A − s_B|; (iv) alienação = (abstenção + brancos + nulos) / aptos. O 2º turno é usado como robustez.
-- **Estrutura** (7 dimensões): econômica, educacional, religiosa, demográfica, cor/raça, acesso, saúde e segurança (ver `PLAN.md` §1b). Covariáveis do Censo 2010 para 2014 e 2018, e do Censo 2022 para 2022 e 2026.
-- **Vizinhança:** efeito espacial BYM2 sobre o grafo queen ∪ kNN(1). Robustez com kNN k ∈ {4, 6, 8} e distância.
+- **Estrutura** (5 dimensões com definição idêntica nos Censos 2010 e 2022): econômica (% moradores com renda pc ≤ ½ SM), educacional (% superior completo, 25+), religiosa (% evangélicos, católicos, sem religião), demográfica (% urbana, log aptos), cor/raça (% pretos+pardos, % indígenas). Censo 2010 para 2014 e 2018; Censo 2022 para 2022 e 2026. Os 5 municípios instalados em 2013 herdam os valores de 2010 do município de origem (marcados). Variáveis só de 2022 (renda média, internet, idade mediana etc.) entram apenas como robustez.
+- **Vizinhança:** na decomposição, filtro espacial de autovetores (MESF) do grafo queen ∪ kNN(1): autovetores com I de Moran ≥ 0,75·λmax (217 vetores). Sensibilidade com 0,5 (640) e 0,25 (1.258). O limiar foi fixado antes de qualquer resultado, porque 0,25 daria 23% de n em regressores. BYM2 é usado como robustez e para inferir coeficientes.
 - **Território:** efeito de UF.
-- **Modelo-base:** Binomial (ou Beta-Binomial, se houver sobredispersão) com ligação logit sobre contagens. Prioris fracamente informativas. Convergência exigida: R̂ < 1,01, ESS > 400, sem divergências.
-- **Decomposição:** Shapley do R² bayesiano sobre os blocos {estrutura, vizinhança, território}, com média e amplitude entre as 3! ordens.
+- **Decomposição (principal):** Shapley do R² ajustado de MQO ponderado por aptos sobre logit(s) (2³ submodelos), com média, amplitude entre as 3! ordens, efeitos únicos e parcela compartilhada. Os ICs vêm de bootstrap de municípios estratificado por UF (200 réplicas, seed fixa).
+- **Modelo bayesiano (robustez):** BYM2 Binomial com ligação logit sobre contagens. Prioris fracamente informativas. Convergência exigida: R̂ < 1,01, ESS > 400, sem divergências.
 - **Inferência:** decisões por intervalo de credibilidade de 90% e ROPE (|β padronizado| < 0,05), não por valor-p. Famílias de testes múltiplos (LISA, inclinações regionais) com Benjamini-Hochberg a 10%.
 
 ## 2. Eixo 1: O que explica o mapa
@@ -36,26 +36,27 @@
   - *Refutada se* o IC90% da tendência incluir 0 ou for negativo.
 - **T2, Território persistente:** entre pares de municípios contíguos separados por divisa estadual, a diferença em s_A, condicionada à estrutura, é ≥ 3 p.p. em 2026 e não cai significativamente desde 2014.
   - *Modelo:* efeito fixo do par, o salto da UF como parâmetro e balanceamento de covariáveis reportado.
-  - *Refutada se* o salto médio tiver IC90% dentro de [−3, 3] p.p.
+  - *Medida:* salto médio |γ_a − γ_b| nas divisas reais **menos** o mesmo salto em fronteiras-placebo (cada UF partida na mediana da longitude dos centroides). O placebo remove o viés de |·| e o efeito de qualquer linha arbitrária.
+  - *Refutada se* (real − placebo) tiver IC90% dentro de [−3, 3] p.p.
 - T1 e T2 não são mutuamente exclusivas. Os quatro resultados possíveis são reportados.
 
 ## 3. Eixo 2: Onde está a divisão
 
-- Decomposição multinível de logit(s_A) em UF → município → seção (`votacao_secao`), por eleição.
+- Decomposição multinível de logit(A/(A+B)) em UF → município → **local de votação** (agregado de `votacao_secao`; o local aproxima o bairro, e as seções de um mesmo local são subdivisões arbitrárias), por eleição. Estimador de momentos ponderado, com correção para poucos locais por município e para o ruído binomial (validado em simulação: `tests/test_metricas.py`).
 - **Entre-lugares:** a parcela UF + município cresce ≥ 5 p.p. entre 2014 e 2026 (IC90% > 0).
 - **Dentro-dos-lugares:** a parcela da seção cresce ≥ 5 p.p. (IC90% > 0).
 - Caso contrário, "estável".
 
 ## 4. Eixo 3: Quem convive com quem
 
-- Isolamento_X = Σᵢ (xᵢ/X)·(xᵢ/tᵢ) e exposição_X→Y = Σᵢ (xᵢ/X)·(yᵢ/tᵢ), para X, Y ∈ {A, B}, nas escalas município e seção.
+- Isolamento_X = Σᵢ (xᵢ/X)·(xᵢ/tᵢ) e exposição_X→Y = Σᵢ (xᵢ/X)·(yᵢ/tᵢ), para X, Y ∈ {A, B}, nas escalas município e local de votação.
 - **Separação:** o isolamento sobe ≥ 0,05 entre 2014 e 2026 **para os dois blocos**.
 - **Estabilidade:** a variação fica em [−0,05, 0,05] para os dois.
 - Mudanças assimétricas são reportadas numericamente, sem qualificação.
 
 ## 5. Eixo 4: Qual diferença divide
 
-- Shapley dentro do bloco estrutural, por dimensão, nas 4 eleições. Os efeitos únicos e a parcela compartilhada (renda × escolaridade) são reportados separadamente.
+- Shapley dentro do bloco estrutural entre as 5 dimensões de §1, nas 4 eleições. Os efeitos únicos e a parcela compartilhada são reportados separadamente.
 - **T4-renda:** a dimensão econômica tem a maior parcela única nas 4 eleições.
 - **T4-deslocamento:** a parcela única de outra dimensão (educacional ou religiosa) cresce ≥ 5 p.p. e supera a econômica em 2022 ou 2026.
 - **Heterogeneidade regional** (ex-H4): inclinações aleatórias por região. "Paradoxo de Simpson" exige inversão de sinal com probabilidade posterior > 0,9 em pelo menos uma região.

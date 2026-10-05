@@ -50,5 +50,8 @@ if __name__ == "__main__":
     a = vizinhanca(g)
     PROCESSED.mkdir(parents=True, exist_ok=True)
     a.to_parquet(PROCESSED / "vizinhanca.parquet", index=False)
+    c = g.to_crs(CRS_METRICO).centroid.to_crs(4674)  # centroide métrico, guardado em lon/lat
+    pd.DataFrame({"cd_municipio_ibge": g.index, "uf": g.uf.values, "lon": c.x.values,
+                  "lat": c.y.values}).to_parquet(PROCESSED / "centroides.parquet", index=False)
     print("municípios:", len(g), "| arestas:", len(a), "| só-knn:", (a.tipo == "knn1").sum(),
           "| componentes:", componentes(a, g.index))
