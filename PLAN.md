@@ -61,7 +61,7 @@ Regra: as teses abaixo são **rivais e pré-registradas**. O trabalho não parte
 
 | Dimensão | Variáveis | Fonte (2010 / 2022) |
 |---|---|---|
-| Econômica | renda per capita, Gini, % renda de transferências, formalidade, emprego público, emprego agro, PIB per capita | Censo, RAIS, MDS, IBGE |
+| Econômica | renda per capita, % até ½ SM (comparável 2010–2022), % renda de outras fontes (Gini municipal 2022 indisponível na API), formalidade, emprego público, emprego agro, PIB per capita | Censo, RAIS, MDS, IBGE |
 | Educacional | anos de estudo 25+, % ensino superior, analfabetismo 15+, IDEB | Censo, INEP |
 | Religiosa | % evangélicos, % católicos, % sem religião | Censo |
 | Demográfica | idade mediana, % 60+, urbanização, densidade, log do eleitorado | Censo, TSE |
@@ -173,11 +173,11 @@ Convenções:
 | TSE: coordenadas dos locais | Colunas de lat/long no arquivo de locais | Local | **Parcial / não verificado**: a página não lista o esquema; há relatos de valores ausentes. Checar no download. | idem |
 | TSE: candidaturas e coligações | `consulta_cand`, `consulta_coligacao` | Candidato | Disponível (padrão conhecido; não reverificado) | portal acima |
 | TSE: municipais 2016/20/24 | Resultados de prefeito e candidaturas | Município | Disponível (não reverificado) | portal acima |
-| De-para TSE↔IBGE | Diretório de municípios com `id_municipio_tse` | Município | Disponível (Base dos Dados; não reverificado) | https://basedosdados.org/dataset/br-bd-diretorios-brasil |
+| De-para TSE↔IBGE | Diretório da Base dos Dados (5.570, sem Boa Esperança do Norte) **e** config do TSE 2026 `mun-e006257-cm.json` (5.571, com código IBGE). Os dois coincidem 100% | Município | Disponível (verificado) | https://basedosdados.org/dataset/br-bd-diretorios-brasil |
 | IBGE: malhas | Malha municipal anual (2022, 2024, 2025) | Município | Disponível | https://www.ibge.gov.br/geociencias/organizacao-do-territorio/malhas-territoriais/15774-malhas.html |
 | Censo 2022: universo | Agregados por setor (>3.000 variáveis: alfabetização, cor/raça, idade, domicílios) + malha de setores, nov/2024 | Setor, bairro, município | Disponível (verificado) | https://www.ibge.gov.br/estatisticas/sociais/populacao/22827-censo-demografico-2022.html |
 | Censo 2022: educação (amostra) | Nível de instrução, anos de estudo, % superior | Município | Disponível, preliminar, fev/2025 (verificado) | https://sidra.ibge.gov.br/pesquisa/censo-demografico/demografico-2022/amostra-educacao |
-| Censo 2022: trabalho e rendimento (amostra) | Rendimento de todas as fontes, Gini, peso do trabalho na renda | Município | Disponível, preliminar, 09/10/2025 (verificado) | https://www.ibge.gov.br/novo-portal-destaques/44425-ibge-divulgara-em-9-de-outubro-de-2025-censo-demografico-2022-trabalho-e-rendimento-resultados-preliminares-da-amostra.html |
+| Censo 2022: trabalho e rendimento (amostra) | Renda pc média e mediana (t10295), composição da renda (t10297), classes de renda pc (t10296). **Gini (t10301) e a t10315 só vão até UF na API**: sem Gini municipal | Município (exceto Gini) | Disponível, preliminar, 09/10/2025 (verificado na API em 04/10/2026) | https://www.ibge.gov.br/novo-portal-destaques/44425-ibge-divulgara-em-9-de-outubro-de-2025-censo-demografico-2022-trabalho-e-rendimento-resultados-preliminares-da-amostra.html |
 | Censo 2022: religião (amostra) | Grandes grupos religiosos | Município | Disponível, preliminar (verificado) | idem portal do Censo |
 | Censo 2010 | Tudo o que entra no IDHM 2010 | Município, setor | Disponível | Atlas Brasil / SIDRA |
 | IDHM oficial | **Só 2010** para municípios. Para 2022 e 2024 há IDHM por PNAD Contínua apenas para UF e RM | Município (2010) | **IDHM municipal 2022: não encontrado** | https://www.atlasbrasil.org.br |

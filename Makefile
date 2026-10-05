@@ -7,7 +7,13 @@ TSE_ZIPS := $(foreach a,$(ANOS),data/raw/tse/$(a)/detalhe_votacao_munzona_$(a).z
 .PHONY: all download painel test checksums verificar
 all: painel test
 
-download: $(TSE_ZIPS) data/raw/bd/municipio.csv.gz
+MALHA := data/raw/ibge/malha/BR_Municipios_2025.zip
+
+download: $(TSE_ZIPS) data/raw/bd/municipio.csv.gz $(MALHA)
+
+$(MALHA):
+	@mkdir -p $(dir $@)
+	curl -sSfL -o $@ "https://geoftp.ibge.gov.br/organizacao_do_territorio/malhas_territoriais/malhas_municipais/municipio_2025/Brasil/BR_Municipios_2025.zip"
 
 data/raw/tse/%.zip:
 	@mkdir -p $(dir $@)
@@ -19,7 +25,7 @@ data/raw/bd/municipio.csv.gz:
 
 # grava os hashes dos brutos baixados (rodar uma vez; versionar raw.sha256)
 checksums: download
-	sha256sum $(TSE_ZIPS) data/raw/bd/municipio.csv.gz > raw.sha256
+	sha256sum $(TSE_ZIPS) data/raw/bd/municipio.csv.gz $(MALHA) > raw.sha256
 
 verificar:
 	sha256sum -c raw.sha256
@@ -43,3 +49,7 @@ previsao: painel
 .PHONY: censo
 censo:
 	uv run python -m geovoto.ibge
+
+.PHONY: vizinhanca
+vizinhanca:
+	uv run python -m geovoto.espacial
