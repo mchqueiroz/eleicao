@@ -53,3 +53,7 @@ censo:
 .PHONY: vizinhanca
 vizinhanca:
 	uv run python -m geovoto.espacial
+
+.PHONY: secoes
+secoes: painel
+	uv run python -m geovoto.secao

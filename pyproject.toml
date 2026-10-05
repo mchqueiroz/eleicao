@@ -9,6 +9,8 @@ dependencies = [
     "numpy>=1.26",
     "geopandas>=1.2.0",
     "libpysal>=4.15.0",
+    "pymc>=6.3.2",
+    "esda>=2.10.0",
 ]
 
 [dependency-groups]
