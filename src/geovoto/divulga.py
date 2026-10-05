@@ -73,7 +73,8 @@ def ler(destino: Path, turno: int = 1) -> tuple[pd.DataFrame, pd.DataFrame]:
         cd = int(d["cdabr"])
         linhas.append({
             "cd_municipio_tse": cd, "pct_totalizado": float(d["s"]["pst"].replace(",", ".")),
-            "aptos": _num(d["e"]["te"]), "comparecimento": _num(d["e"]["c"]),
+            "aptos": _num(d["e"]["te"]), "aptos_apurados": _num(d["e"]["est"]),  # c + a = est
+            "comparecimento": _num(d["e"]["c"]),
             "abstencoes": _num(d["e"]["a"]), "validos": _num(d["v"]["vv"]),
             "brancos": _num(d["v"]["vb"]), "nulos": _num(d["v"]["tvn"]),
             "snapshot": f'{d["dg"]} {d["hg"]}'})

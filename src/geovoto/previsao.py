@@ -35,7 +35,8 @@ def primeiro_turno(df: pd.DataFrame) -> pd.DataFrame:
         "uf": uf.values, "aptos": df.aptos.values,
         "A1": df.votos_A.values, "B1": df.votos_B.values,
         "O1": (df.validos - df.votos_A - df.votos_B).values,
-        "ab1": (df.abstencoes / df.aptos).values})
+        # apuração parcial (2026 provisório): abstenção só existe nas seções já totalizadas
+        "ab1": (df.abstencoes / df.get("aptos_apurados", df.aptos)).values})
 
 
 def pares(painel: pd.DataFrame) -> pd.DataFrame:

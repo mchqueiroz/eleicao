@@ -84,7 +84,8 @@ def _num(v: str) -> float:
 def _serie(tabela: int, var: int, cls: dict, periodo: int) -> pd.Series:
     """Uma consulta com UMA categoria por classificação → Series indexada por município."""
     c = "|".join(f"{k}[{','.join(map(str, v))}]" for k, v in cls.items())
-    url = f"{API}/{tabela}/periodos/{periodo}/variaveis/{var}?localidades=N6[all]&classificacao={c}"
+    url = f"{API}/{tabela}/periodos/{periodo}/variaveis/{var}?localidades=N6[all]"
+    url += f"&classificacao={c}" if c else ""
     nome = f"t{tabela}_v{var}_{periodo}_" + c.replace("|", "_").replace("[", "-").replace("]", "")
     arq = CACHE / f"{nome}.json"
     if not arq.exists():
@@ -126,6 +127,18 @@ def censo(consultas: dict, periodo: int) -> pd.DataFrame:
     return df.reset_index()
 
 
+def anual(tabela: int, var: int, anos) -> pd.DataFrame:
+    """Série municipal anual sem classificações (ex.: PIB 5938/37, população estimada 6579/9324)."""
+    linhas = []
+    for ano in anos:
+        try:
+            s = _serie(tabela, var, {}, ano)
+        except Exception:      # ano sem dado na tabela (ex.: estimativas não saem em ano de censo)
+            continue
+        linhas.append(s.rename("valor").rename_axis("cd_municipio_ibge").reset_index().assign(ano=ano))
+    return pd.concat(linhas, ignore_index=True)
+
+
 if __name__ == "__main__":
     PROCESSED.mkdir(parents=True, exist_ok=True)
     for ano, consultas in [(2010, CONSULTAS_2010), (2022, CONSULTAS_2022)]:
@@ -133,3 +146,10 @@ if __name__ == "__main__":
         df.to_parquet(PROCESSED / f"censo{ano}_municipio.parquet", index=False)
         print(ano, df.shape)
         print(df.describe().T[["count", "mean", "min", "max"]].round(2))
+    anos = range(2010, 2027)
+    pib = anual(5938, 37, anos).rename(columns={"valor": "pib_mil_reais"})
+    pop = anual(6579, 9324, anos).rename(columns={"valor": "pop_estimada"})
+    eco = pib.merge(pop, on=["cd_municipio_ibge", "ano"], how="outer")
+    # pop_estimada falta em 2010 e 2022 (anos de censo: usar censo) e 2023 (IBGE não publicou)
+    eco.to_parquet(PROCESSED / "economia_anual.parquet", index=False)
+    print(eco.groupby("ano")[["pib_mil_reais", "pop_estimada"]].count().T)
