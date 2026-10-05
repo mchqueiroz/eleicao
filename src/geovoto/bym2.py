@@ -68,7 +68,8 @@ if __name__ == "__main__":
         uf_idx = d.uf.astype("category").cat.codes.to_numpy()
         for alvo in ["votos_A", "votos_B"]:
             idata = ajustar(d[alvo].to_numpy(), d.validos.to_numpy(), X, uf_idx, W, s=s)
-            idata.to_netcdf(saida / f"{ano}_{alvo}.nc")
             resumo.append({"ano": ano, "alvo": alvo, **diagnostico(idata)})
             print(resumo[-1], flush=True)
+            pd.DataFrame(resumo).to_csv(saida / "diagnosticos.csv", index=False)   # parcial a cada modelo
+            idata.to_netcdf(saida / f"{ano}_{alvo}.nc")
     pd.DataFrame(resumo).to_csv(saida / "diagnosticos.csv", index=False)
