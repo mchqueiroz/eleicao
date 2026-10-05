@@ -22,7 +22,7 @@ EXPLORA    := $(MUNICIPAIS) $(RAIS) $(REGIC)
 .DELETE_ON_ERROR:
 .PHONY: all download checksums verificar test painel secoes censo vizinhanca \
         provisorio2026 previsao eixos bym2 veredito economia prefeitos exploratorio mapa \
-        poder pacote-previsao avaliar-previsao
+        poder pacote-previsao avaliar-previsao paper
 
 all: painel secoes censo vizinhanca test
 
@@ -128,3 +128,8 @@ mapa: painel vizinhanca
 # poder do desenho com desfechos simulados (rodar ANTES de congelar o pré-registro; minutos, em paralelo)
 poder: painel censo vizinhanca
 	OMP_NUM_THREADS=1 OPENBLAS_NUM_THREADS=1 MKL_NUM_THREADS=1 uv run python -m geovoto.poder
+
+# artigo: tabelas e macros saem de data/output (nada digitado à mão); PDF em paper/build/
+paper:
+	uv run python -m geovoto.artigo
+	cd paper && latexmk -pdf -interaction=nonstopmode -outdir=build artigo.tex

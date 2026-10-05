@@ -1,0 +1,260 @@
+\documentclass[11pt,a4paper]{article}
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage[brazilian]{babel}
+\usepackage{lmodern,microtype,amsmath,booktabs,graphicx,xcolor}
+\usepackage[margin=2.5cm]{geometry}
+\usepackage[round,authoryear]{natbib}
+\usepackage[hidelinks]{hyperref}
+
+\newcommand{\todo}[1]{\textcolor{red}{[\textbf{A FAZER:} #1]}}
+\input{gerado/macros}
+
+\title{Entre lugares e dentro deles: renda, escolaridade, território\\
+       e a geografia da divisão eleitoral no Brasil (2014--2026)}
+\author{\todo{nome e filiação}}
+\date{Rascunho de \today}
+
+\begin{document}
+\maketitle
+
+\ifparcial
+\begin{center}\fbox{\parbox{0.9\linewidth}{\small\textbf{Versão parcial.}
+Os resultados abaixo cobrem \anosAnalise. O pré-registro avalia as teses até 2026; os vereditos
+finais dependem dos arquivos definitivos do TSE para 2026 e serão recalculados com o mesmo código.}}
+\end{center}
+\fi
+
+\begin{abstract}
+A divisão eleitoral brasileira é uma divisão de lugares (território, fronteira, vizinhança) ou de
+perfis (estrutura social)? E ela se concentra entre municípios ou dentro deles? Testamos teses rivais,
+pré-registradas antes dos dados finais de 2026, sobre as eleições presidenciais de 2014 a 2026, com
+os dois primeiros colocados de cada eleição definidos por posição e não por partido. Quatro eixos
+organizam a análise: (1) a decomposição de Shapley do mapa municipal em estrutura, vizinhança e
+território; (2) a decomposição da variância entre UF, município e local de votação; (3) índices de
+isolamento e exposição; e (4) a decomposição da estrutura em cinco dimensões censitárias.
+\todo{resultados principais, depois do veredito final com 2026}
+\end{abstract}
+
+% ---------------------------------------------------------------------------
+\section{Introdução}
+
+\todo{motivação e literatura: geografia eleitoral brasileira desde 2006 \citep{soares2008}; debate
+lugares versus perfis; lacuna que o desenho preenche.}
+
+O artigo confronta duas leituras do mapa eleitoral. Na primeira, o voto municipal passou a seguir
+cada vez mais a composição social dos lugares (renda, escolaridade, religião), e o território, entendido como a
+UF e a posição no mapa, perdeu peso. Na segunda, municípios socialmente parecidos continuam votando
+diferente conforme o estado em que estão, e esse salto nas divisas estaduais não diminuiu. As duas
+leituras não são exclusivas: o desenho admite os quatro resultados possíveis e reporta todos.
+
+Três escolhas de desenho distinguem o trabalho. Primeiro, as teses, as medidas e os limiares de
+decisão foram fixados num pré-registro público \citep{nosek2018} antes dos dados finais de 2026
+(tag \texttt{prereg-v1}). Segundo, os blocos são posicionais (A é o primeiro colocado nacional no 1º
+turno; B, o segundo), e toda estimativa com sinal é reportada para os dois. Terceiro, todas as
+afirmações valem para lugares, não para eleitores \citep{robinson1950}.
+
+% ---------------------------------------------------------------------------
+\section{Dados}
+
+\paragraph{Resultados eleitorais.} Arquivos de dados abertos do TSE por município e zona e por
+seção, para os dois turnos de 2014, 2018 e 2022. Para 2026, \todo{arquivos finais do TSE (previstos
+para novembro de 2026)}. As seções são agregadas por local de votação, que aproxima o bairro;
+seções de um mesmo local são subdivisões administrativas arbitrárias.
+
+\paragraph{Unidade.} Município: 5.570 em 2014--2022 e 5.571 em 2026. Para comparações no tempo, Boa
+Esperança do Norte (MT) é agregado com Sorriso e Nova Ubiratã numa área mínima comparável. Votos no
+exterior ficam fora.
+
+\paragraph{Desfechos.} Participação de A e de B nos votos válidos do 1º turno; comparecimento sobre
+aptos; $|\text{margem}| = |s_A - s_B|$. O 2º turno entra como robustez.
+
+\paragraph{Estrutura.} Cinco dimensões com definição idêntica nos Censos de 2010 e 2022: econômica
+(\% de moradores com renda \emph{per capita} até meio salário mínimo), educacional (\% com superior
+completo, 25 anos ou mais), religiosa (\% de evangélicos, católicos e sem religião), demográfica (\%
+urbana, log do eleitorado) e cor/raça (\% de pretos e pardos, \% de indígenas). O Censo de 2010 serve a
+2014 e 2018; o de 2022, a 2022 e 2026.
+
+% ---------------------------------------------------------------------------
+\section{Desenho e métodos}
+
+\subsection{Eixo 1: o que explica o mapa}
+
+Para cada eleição e bloco, regredimos $\operatorname{logit}(s)$ por MQO ponderado pelo eleitorado sobre
+três grupos de regressores: estrutura (as cinco dimensões), vizinhança e território (efeitos de UF).
+A vizinhança é representada por um filtro espacial de autovetores \citep{griffith2003,tiefelsdorf2007}
+do grafo de contiguidade \emph{queen} unido ao vizinho mais próximo, retendo os autovetores com I de
+Moran de pelo menos $0{,}75\,\lambda_{\max}$ (\nAutovetores{} vetores). O $R^2$ ajustado é repartido
+entre os três grupos pelo valor de Shapley sobre os $2^3$ submodelos \citep{gromping2006}; reportamos
+também os efeitos únicos e a parcela compartilhada, que não é atribuída a nenhum grupo. Os intervalos
+vêm de 200 réplicas de \emph{bootstrap} de municípios estratificado por UF.
+
+\textbf{T1 (estruturação)} é suportada se a tendência linear da parcela estrutural no período for de
+pelo menos $+5$ p.p. com IC90\% acima de zero, e refutada se o IC90\% incluir zero.
+
+\textbf{T2 (território persistente)} usa pares de municípios contíguos separados por divisa estadual
+\citep{keele2015}. Estimamos, por diferenças dentro do par, o salto de cada UF condicionado à estrutura,
+e resumimos as divisas pelo salto quadrático médio
+\begin{equation}
+  J = \sqrt{\overline{(\hat\gamma_a - \hat\gamma_b)^2} - \overline{\operatorname{Var}(\hat\gamma_a - \hat\gamma_b)}},
+\end{equation}
+em que a variância é a exata do estimador (os pares que compartilham um município têm erros
+correlacionados). Sem essa correção, o ruído infla qualquer salto estimado. T2 é suportada se $J \geq 3$
+p.p. no último ano e não cair significativamente desde o primeiro, e refutada se o IC90\% ficar dentro
+de $[-3, 3]$. Como validação, a mesma medida é calculada em fronteiras-placebo, com cada UF partida na
+mediana da longitude, e deve ter IC90\% contendo zero.
+
+\subsection{Eixo 2: onde está a divisão}
+
+Decompomos a variância de $\operatorname{logit}(A/(A+B))$ em UF, município e local de votação, com um
+estimador de momentos ponderado e corrigido para poucos locais por município e para o ruído binomial.
+Cada lado (entre lugares ou dentro deles) vence se sua parcela crescer pelo menos 5 p.p. com IC90\% acima de zero.
+
+\subsection{Eixo 3: quem convive com quem}
+
+Isolamento e exposição \citep{massey1988}: $\text{Isol}_X = \sum_i (x_i/X)(x_i/t_i)$ e
+$\text{Exp}_{X\to Y} = \sum_i (x_i/X)(y_i/t_i)$, para $X, Y \in \{A, B\}$, nas escalas município e local
+de votação. Há separação se o isolamento sobe pelo menos 0,05 para os dois blocos, e estabilidade se a
+variação fica em $[-0{,}05;\,0{,}05]$ para os dois.
+
+\subsection{Eixo 4: qual diferença divide}
+
+Decomposição de Shapley dentro do bloco estrutural, entre as cinco dimensões. \textbf{T4-renda}: a
+dimensão econômica tem a maior parcela única em todas as eleições. \textbf{T4-deslocamento}: a parcela
+única de outra dimensão cresce pelo menos 5 p.p. e supera a econômica em alguma das duas últimas eleições.
+
+\subsection{Robustez}
+
+Um modelo BYM2 binomial \citep{riebler2016} sobre as contagens, com efeito de UF, estima os
+coeficientes com dependência espacial explícita. A convergência exigida é $\hat R < 1{,}01$, ESS acima de 400 e nenhuma
+divergência. Também refazemos o eixo 1 com limiares de 0,5 e 0,25 no filtro espacial, com regiões
+imediatas no lugar de UF e com o 2º turno.
+
+\subsection{Poder do desenho}
+
+Antes do congelamento, simulamos desfechos sobre a geografia e as covariáveis reais para medir com que
+frequência cada regra de decisão acerta. \todo{tabela de poder no apêndice; resumir: com salto
+verdadeiro de 3 p.p., T2 é suportada em cerca de metade das réplicas; com 5 p.p., na maioria; sem
+salto, nunca.}
+
+% ---------------------------------------------------------------------------
+\section{Resultados}
+
+\ifparcial\noindent\emph{Resultados parciais (\anosAnalise).}\par\fi
+
+A Tabela~\ref{tab:veredito} aplica mecanicamente as regras do pré-registro.
+
+\begin{table}[htbp]\centering\small
+\caption{Vereditos pelas regras pré-registradas.}\label{tab:veredito}
+\input{gerado/tab_veredito}
+\end{table}
+
+\subsection{Eixo 1}\label{sec:res-eixo1}
+
+A tendência da parcela estrutural no período foi de \tUmA{} p.p. para o bloco A e \tUmB{} p.p. para
+o bloco B (Tabela~\ref{tab:eixo1}); T1 é \emph{\tUmVA} para A e \emph{\tUmVB} para B.
+\todo{interpretar só depois do veredito final.}
+
+\begin{table}[htbp]\centering\small
+\caption{Decomposição de Shapley do $R^2$ ajustado (eixo 1).}\label{tab:eixo1}
+\input{gerado/tab_eixo1}
+\end{table}
+
+Nas divisas estaduais, o salto corrigido em \anoFim{} foi de \tDoisSalto{} p.p. (IC90\%
+\tDoisLo{} a \tDoisHi{}), e o veredito mecânico de T2 é \emph{\tDoisVeredito}. Nas fronteiras-placebo
+a mesma medida deu \tDoisPlacebo{} p.p. (IC90\% \tDoisPlaceboLo{} a \tDoisPlaceboHi{};
+Tabela~\ref{tab:fronteira}).
+\ifplacebook
+O intervalo contém zero, como esperado, e a validação passa.
+\else
+O intervalo deveria conter zero e não contém: a validação falhou. A medida, portanto, ainda carrega
+viés nos dados reais, provavelmente por ruído espacialmente correlacionado, ausente da simulação de
+poder. Conforme o pré-registro, reportamos o veredito de T2 ao lado dessa falha, sem alterar a medida.
+\fi
+
+\begin{table}[htbp]\centering\small
+\caption{Salto quadrático médio nas divisas estaduais e nas fronteiras-placebo (p.p.).}\label{tab:fronteira}
+\input{gerado/tab_fronteira}
+\end{table}
+
+\subsection{Eixo 2}
+
+A parcela entre lugares (UF e município) variou \eDoisEntre{} p.p., e a parcela dentro dos lugares,
+\eDoisDentro{} p.p. (Tabela~\ref{tab:eixo2}). Veredito pelas regras: entre lugares,
+\emph{\eDoisVEntre}; dentro dos lugares, \emph{\eDoisVDentro}.
+
+\begin{table}[htbp]\centering\small
+\caption{Parcelas da variância de $\operatorname{logit}(A/(A+B))$ por nível (eixo 2).}\label{tab:eixo2}
+\input{gerado/tab_eixo2}
+\end{table}
+
+\subsection{Eixo 3}
+
+Na escala do local de votação, o isolamento variou \eTresA{} para o bloco A e \eTresB{} para o bloco
+B (Tabela~\ref{tab:eixo3}). O veredito mecânico é \emph{\eTresV}; mudanças assimétricas são
+reportadas por bloco, sem qualificação.
+
+\begin{table}[htbp]\centering\small
+\caption{Isolamento e exposição (eixo 3).}\label{tab:eixo3}
+\input{gerado/tab_eixo3}
+\end{table}
+
+\subsection{Eixo 4}
+
+O veredito mecânico é \emph{\tQuatroA} para o bloco A e \emph{\tQuatroB} para o bloco B
+(Tabela~\ref{tab:eixo4}). A parcela compartilhada entre as dimensões é grande, porque renda,
+escolaridade e cor/raça são fortemente correlacionadas entre municípios, e não é atribuída a nenhuma
+delas.
+
+\begin{table}[htbp]\centering\small
+\caption{Efeitos únicos das dimensões estruturais (eixo 4).}\label{tab:eixo4}
+\resizebox{\linewidth}{!}{\input{gerado/tab_eixo4}}
+\end{table}
+
+\subsection{Robustez}
+
+\ifbymdois
+\begin{table}[htbp]\centering\small
+\caption{Diagnósticos de convergência do BYM2.}\label{tab:bym2}
+\input{gerado/tab_bym2}
+\end{table}
+\todo{coeficientes do BYM2 versus MQO.}
+\else
+\todo{BYM2 em execução.}
+\fi
+\todo{sensibilidade do filtro espacial, regiões imediatas e 2º turno.}
+
+% ---------------------------------------------------------------------------
+\section{Previsão do 2º turno de 2026}
+
+\todo{a previsão foi publicada antes do 2º turno (release \texttt{prereg-v1}); avaliar contra o
+\emph{baseline} por MAE ponderado, CRPS \citep{gneiting2007} e cobertura, depois de 25/10/2026.}
+
+% ---------------------------------------------------------------------------
+\section{Discussão}
+
+\todo{escrever só depois do veredito final com 2026.}
+
+\section{Limitações}
+
+As afirmações valem para lugares, não para eleitores \citep{robinson1950}. Os resultados dependem da
+escala de agregação \citep{openshaw1984}; por isso o eixo 2 usa três níveis e a robustez troca UF por
+regiões imediatas. A ``vizinhança'' é dependência residual, não contágio. O cadastro eleitoral
+desatualizado afeta a abstenção. As covariáveis censitárias são defasadas em relação às eleições de
+2018 e 2026.
+\ifplacebook\else Por fim, a validação por placebo do T2 falhou nos dados reais
+(Seção~\ref{sec:res-eixo1}).\fi
+
+% ---------------------------------------------------------------------------
+\appendix
+\section{Desvios do pré-registro}
+
+\begin{enumerate}
+  \item O veredito calculado sem 2026 recebe o rótulo ``parcial''. É só um rótulo.
+  \item O BYM2 passou a usar o amostrador NUTS do \texttt{nutpie}, porque o padrão do PyMC não
+        terminou nenhum modelo em 4 horas. Modelo, prioris e critérios são os mesmos.
+\end{enumerate}
+
+\bibliographystyle{abbrvnat}
+\bibliography{referencias}
+\end{document}
