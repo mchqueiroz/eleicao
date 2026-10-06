@@ -140,6 +140,13 @@ def dados_exploratorios(r: dict) -> str:
             for c, rot in (("pct_evangelicos", "ev"), ("pct_catolicos", "cat"), ("pct_sem_religiao", "sem"),
                            ("pct_ate_meio_sm", "pobre"), ("pct_superior_25mais", "sup")):
                 d[f"{rot}{a}"] = num(x[a]["coeficientes"][c], 2, True)
+    fc = ROOT / "data" / "output" / "exploratorio_teses" / "censo2010_em_2022.json"
+    if fc.exists():
+        for lado, v in json.loads(fc.read_text()).items():
+            for k, rot in (("religiosa", "rel"), ("economica", "renda")):
+                b = [x[k] for x in v["unicos_boot"]]
+                d[f"{rot}{lado}Censo"] = num(med(b), 3)
+                d[f"{rot}{lado}CensoLo"], d[f"{rot}{lado}CensoHi"] = (num(q, 3) for q in np.percentile(b, [5, 95]))
     d["nPlacebos"] = str(len(next(iter(x.values()))["placebos_aleatorios"])) if x else "0"
     linhas = ["\\newcommand{\\dado}[1]{\\ifcsname dado@#1\\endcsname\\csname dado@#1\\endcsname"
               "\\else\\textcolor{red}{??#1}\\fi}"]

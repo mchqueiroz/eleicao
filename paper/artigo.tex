@@ -208,6 +208,14 @@ aparece em 2018 (\dado{relAdv2018}); no PT, ele se concentra em 2022. A escolari
 a clivagem emergente em outras democracias \citep{gethin2021}, tem parcela única próxima de zero em
 todos os anos: o que ela explica, explica junto com renda e cor/raça.
 
+Uma explicação mecânica para o salto de 2022 seria a troca de censo: a religião de 2014 e 2018 vem do
+Censo de 2010, e a de 2022, do Censo de 2022. Para separar mudança eleitoral de mudança de medição,
+refizemos 2022 com as covariáveis do Censo de 2010. A parcela única da religião continua dominante:
+\dado{relPTCenso} no PT (IC90\% \dado{relPTCensoLo} a \dado{relPTCensoHi}) e \dado{relAdvCenso} no
+adversário (\dado{relAdvCensoLo} a \dado{relAdvCensoHi}), contra \dado{rendaPTCenso} e
+\dado{rendaAdvCenso} da renda. A maior parte do crescimento é, portanto, mudança no voto, e não na
+medida.
+
 \begin{figure}[htbp]\centering
 \includegraphics[width=\linewidth]{figuras/fig_dimensoes}
 \caption{Parcela única de cada dimensão social no $R^2$ (quanto o ajuste cai quando só ela é
@@ -277,12 +285,10 @@ explica a \emph{inclinação} do voto dentro de cada estado, enquanto o estado d
 
 Três cautelas. Primeiro, as afirmações valem para lugares, não para pessoas \citep{robinson1950}:
 ``municípios mais evangélicos'' não equivale a ``eleitores evangélicos''. A validação com dados
-individuais do Estudo Eleitoral Brasileiro é o próximo passo. Segundo, as variáveis religiosas de 2014
-e 2018 vêm do Censo de 2010; parte do crescimento da parcela religiosa em 2022 pode refletir a
-atualização para o Censo de 2022. Terceiro, a análise alinhada por campo e a distribuição de
+individuais do Estudo Eleitoral Brasileiro é o próximo passo. Segundo, as covariáveis são censitárias e defasadas; o teste com o Censo de 2010 mostra que a troca de
+censo explica uma parte minoritária (cerca de um quarto) do salto religioso de 2022, mas não elimina a defasagem. Terceiro, a análise alinhada por campo e a distribuição de
 placebos são exploratórias. \ifparcial Os dados de 2026 são o teste fora da amostra dessas
 regularidades.\fi
-\todo{conferir a cautela do Censo: refazer 2022 com o Censo 2010 como robustez.}
 
 % ===========================================================================
 \section{Limitações}
