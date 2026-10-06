@@ -108,7 +108,7 @@ veredito:
 
 # um processo por ano (nutpie usa ~4 núcleos cada)
 bym2: painel censo vizinhanca
-	$(foreach a,$(shell uv run python -c "from geovoto import CONFIG; print(*CONFIG['anos'])"),uv run python -m geovoto.bym2 $(a) > data/output/bym2/run_$(a).log 2>&1 &) wait
+	$(foreach a,$(shell uv run python -c "from geovoto import CONFIG; print(*CONFIG['anos'])"),uv run python -m geovoto.bym2 $(a) > data/output/bym2/run_$(a).log 2>&1 &) wait; ! grep -l -E "Traceback|Bloqueado" data/output/bym2/run_*.log
 
 # ---------- exploratórias (H1, H3, H7) e mapa público ----------
 $(P)/rais_municipio.parquet: $(RAIS) $(DIRETORIO) src/geovoto/economia.py
