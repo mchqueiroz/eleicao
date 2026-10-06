@@ -19,7 +19,7 @@ DIMS = {"economica": "Econômica", "educacional": "Educacional", "religiosa": "R
 
 
 def num(x, casas=3, sinal=False) -> str:
-    return "" if x is None else f"{x:{'+' if sinal else ''}.{casas}f}".replace(".", "{,}")
+    return "" if x is None else f"{x:{'+' if sinal else ''}.{casas}f}".replace(".", "{,}").replace("-", "$-$")
 
 
 def tabela(cabecalho: list[str], linhas: list[list[str]], alinhamento: str) -> str:
@@ -77,6 +77,23 @@ def tab_eixo4(r: dict) -> str:
     linhas = [[str(a), ALVOS[alvo]] + [num(r[a]["eixo4"][alvo]["unicos"][d]) for d in DIMS]
               + [num(r[a]["eixo4"][alvo]["compartilhado"])] for a in sorted(r) for alvo in ("yA", "yB")]
     return tabela(["Ano", "Bloco"] + list(DIMS.values()) + ["Compart."], linhas, "ll" + "r" * (len(DIMS) + 1))
+
+
+def tab_robustez(r: dict) -> str:
+    """Parcela de Shapley da estrutura (e da UF) por especificação, alinhada por campo."""
+    from geovoto.teses_extra import campo_pt
+    linhas = []
+    for a in sorted(r):
+        pt = campo_pt(a)
+        for lado, alvo in (("PT", f"y{pt}"), ("Adv.", f"y{'B' if pt == 'A' else 'A'}")):
+            est = lambda x: num(x["estrutura"]) if x else "--"
+            sens = r[a]["eixo1_sensibilidade_mesf"]
+            rob = r[a]["robustez"]
+            seg = rob.get("segundo_turno", {}).get(alvo) if alvo == "yA" else None
+            linhas.append([str(a), lado, est(r[a]["eixo1"][alvo]["shapley"]), est(sens["0.5"][alvo]),
+                           est(sens["0.25"][alvo]), est(rob["regioes_imediatas"][alvo]), est(seg)])
+    return tabela(["Ano", "Campo", "Principal", "MESF 0,5", "MESF 0,25", "Reg. imediatas", "2\\textsuperscript{o} turno"],
+                  linhas, "llrrrrr")
 
 
 def tab_bym2() -> str | None:
@@ -137,9 +154,9 @@ def dados_exploratorios(r: dict) -> str:
             pl = np.array(x[a]["placebos_aleatorios"])
             d[f"plMed{a}"], d[f"plMax{a}"] = num(np.median(pl), 1), num(pl.max(), 1)
             e = sorted(x[a]["efeitos_uf_pp"].items(), key=lambda t: t[1])
-            fmt = lambda lst: ", ".join(f"{u} ({num(v, 0, True).replace('-', '$-$')})" for u, v in lst)
+            fmt = lambda lst: ", ".join(f"{u} ({num(v, 0, True)})" for u, v in lst)
             d[f"ufBaixo{a}"], d[f"ufAlto{a}"] = fmt(e[:4]), fmt(e[::-1][:4])
-            d |= {f"uf{u}{a}": num(v, 0, True).replace("-", "$-$") for u, v in e}
+            d |= {f"uf{u}{a}": num(v, 0, True) for u, v in e}
             d[f"plAcima{a}"] = str(int((pl >= r[a]["fronteira_pp"]["real"]).sum()))
             for c, rot in (("pct_evangelicos", "ev"), ("pct_catolicos", "cat"), ("pct_sem_religiao", "sem"),
                            ("pct_ate_meio_sm", "pobre"), ("pct_superior_25mais", "sup"),
@@ -157,6 +174,13 @@ def dados_exploratorios(r: dict) -> str:
                     rel = {a: med([x["eixo4"][alvo(a)]["unicos"]["religiosa"] for x in r[a]["eixo1_4_boot"]])
                            for a in (2018, 2022)}
                     d[f"fracCenso{lado}"] = f"{100 * (rel[2022] - med(b)) / (rel[2022] - rel[2018]):.0f}"
+    from geovoto.teses_extra import campo_pt as _cp
+    ult = max(r)
+    if "eixo4_estendido" in r[ult]["robustez"]:
+        pt = _cp(ult)
+        for lado, alvo in (("PT", f"y{pt}"), ("Adv", f"y{'B' if pt == 'A' else 'A'}")):
+            e = r[ult]["robustez"]["eixo4_estendido"][alvo]
+            d[f"relEst{lado}"], d[f"rendaEst{lado}"] = num(e["religiosa"]), num(e["economica"])
     d["nPlacebos"] = str(len(next(iter(x.values()))["placebos_aleatorios"])) if x else "0"
     linhas = ["\\newcommand{\\dado}[1]{\\ifcsname dado@#1\\endcsname\\csname dado@#1\\endcsname"
               "\\else\\textcolor{red}{??#1}\\fi}"]
@@ -172,12 +196,12 @@ def gerar() -> None:
     SAIDA.mkdir(parents=True, exist_ok=True)
     arquivos = {"macros": macros(r, v, bym2 is not None) + dados_exploratorios(r), "tab_veredito": tab_veredito(v),
                 "tab_eixo1": tab_eixo1(r), "tab_fronteira": tab_fronteira(r), "tab_eixo2": tab_eixo2(r),
-                "tab_eixo3": tab_eixo3(r), "tab_eixo4": tab_eixo4(r), "tab_bym2": bym2 or "% BYM2 ainda não rodou\n"}
+                "tab_eixo3": tab_eixo3(r), "tab_robustez": tab_robustez(r), "tab_eixo4": tab_eixo4(r), "tab_bym2": bym2 or "% BYM2 ainda não rodou\n"}
     for nome, txt in arquivos.items():
         (SAIDA / f"{nome}.tex").write_text(txt)
     print(f"{len(arquivos)} arquivos em {SAIDA}")
 
 
 if __name__ == "__main__":
-    assert num(0.1234) == "0{,}123" and num(-1.0, 1, True) == "-1{,}0"
+    assert num(0.1234) == "0{,}123" and num(-1.0, 1, True) == "$-$1{,}0"
     gerar()

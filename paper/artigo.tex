@@ -278,7 +278,8 @@ separam municípios parecidos que votam diferente.
 \includegraphics[width=\linewidth]{figuras/fig_fronteira}
 \caption{Salto quadrático médio nas divisas estaduais (linha) e em \dado{nPlacebos} linhas-placebo
 com direção e posição sorteadas dentro de cada estado (histograma), condicionado à estrutura
-social.}\label{fig:fronteira}
+social. Valores negativos indicam que a dispersão estimada ficou abaixo do ruído esperado, isto é,
+nenhum salto detectável (a medida é $\operatorname{sinal}\cdot\sqrt{|\cdot|}$).}\label{fig:fronteira}
 \end{figure}
 
 A Figura~\ref{fig:mapa} mostra onde está o território: o efeito de cada estado no voto no PT, depois
@@ -316,8 +317,9 @@ Tabela~\ref{tab:eixo3}).
 \ifparcial\noindent\emph{Provisória, sobre \anosAnalise.}\par\fi
 O mapa eleitoral brasileiro não escolheu entre lugares e perfis. Ele combina uma clivagem religiosa
 que atravessa o país, crescente e já maior que a de renda, com uma clivagem territorial que as
-divisas estaduais ainda marcam com nitidez. As duas coisas são compatíveis porque a estrutura social
-explica a \emph{inclinação} do voto dentro de cada estado, enquanto o estado desloca o \emph{nível}.
+divisas estaduais ainda marcam com nitidez. As duas coisas são compatíveis: no modelo, a estrutura social ordena os
+municípios dentro de cada estado, e o estado desloca o patamar de todos eles, para cima ou para
+baixo, sem desfazer essa ordem.
 
 Três cautelas. Primeiro, as afirmações valem para lugares, não para pessoas \citep{robinson1950}:
 ``municípios mais evangélicos'' não equivale a ``eleitores evangélicos''. A validação com dados
@@ -375,7 +377,19 @@ residual, não contágio; covariáveis censitárias defasadas em relação a 201
 \else
 \todo{BYM2 \citep{riebler2016} em execução.}
 \fi
-\todo{sensibilidade do filtro espacial (limiares 0,5 e 0,25), regiões imediatas e 2\ordo{} turno.}
+A Tabela~\ref{tab:robustez} refaz a parcela de Shapley da estrutura em especificações alternativas:
+filtros espaciais com mais autovetores (limiares 0,5 e 0,25), regiões imediatas no lugar de
+municípios (dependência de escala) e o 2\ordo{} turno como desfecho. A reorganização do voto
+adversário em 2018 aparece em todas elas. Em \anoFim{}, o eixo 4 também foi refeito com quatro
+variáveis adicionais disponíveis só no Censo de 2022 (renda média, acesso à internet, idade mediana e
+alfabetização): a parcela única da religião fica em \dado{relEstPT} no PT e \dado{relEstAdv} no
+adversário, contra \dado{rendaEstPT} e \dado{rendaEstAdv} da renda.
+
+\begin{table}[htbp]\centering\small
+\caption{Parcela de Shapley da estrutura social por especificação, alinhada por campo (estimativas
+pontuais). O 2\ordo{} turno está disponível para o bloco A de cada ano.}\label{tab:robustez}
+\input{gerado/tab_robustez}
+\end{table}
 
 \section{Desvios do pré-registro}
 
