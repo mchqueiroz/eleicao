@@ -147,6 +147,11 @@ def dados_exploratorios(r: dict) -> str:
                 b = [x[k] for x in v["unicos_boot"]]
                 d[f"{rot}{lado}Censo"] = num(med(b), 3)
                 d[f"{rot}{lado}CensoLo"], d[f"{rot}{lado}CensoHi"] = (num(q, 3) for q in np.percentile(b, [5, 95]))
+                if k == "religiosa" and 2018 in r and 2022 in r:    # parte do salto 2018→2022 devida ao censo
+                    alvo = lambda a: f"y{campo_pt(a)}" if lado == "PT" else f"y{'B' if campo_pt(a) == 'A' else 'A'}"
+                    rel = {a: med([x["eixo4"][alvo(a)]["unicos"]["religiosa"] for x in r[a]["eixo1_4_boot"]])
+                           for a in (2018, 2022)}
+                    d[f"fracCenso{lado}"] = f"{100 * (rel[2022] - med(b)) / (rel[2022] - rel[2018]):.0f}"
     d["nPlacebos"] = str(len(next(iter(x.values()))["placebos_aleatorios"])) if x else "0"
     linhas = ["\\newcommand{\\dado}[1]{\\ifcsname dado@#1\\endcsname\\csname dado@#1\\endcsname"
               "\\else\\textcolor{red}{??#1}\\fi}"]
