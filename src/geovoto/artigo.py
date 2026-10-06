@@ -136,9 +136,14 @@ def dados_exploratorios(r: dict) -> str:
         if a in x:
             pl = np.array(x[a]["placebos_aleatorios"])
             d[f"plMed{a}"], d[f"plMax{a}"] = num(np.median(pl), 1), num(pl.max(), 1)
+            e = sorted(x[a]["efeitos_uf_pp"].items(), key=lambda t: t[1])
+            fmt = lambda lst: ", ".join(f"{u} ({num(v, 0, True).replace('-', '$-$')})" for u, v in lst)
+            d[f"ufBaixo{a}"], d[f"ufAlto{a}"] = fmt(e[:4]), fmt(e[::-1][:4])
+            d |= {f"uf{u}{a}": num(v, 0, True).replace("-", "$-$") for u, v in e}
             d[f"plAcima{a}"] = str(int((pl >= r[a]["fronteira_pp"]["real"]).sum()))
             for c, rot in (("pct_evangelicos", "ev"), ("pct_catolicos", "cat"), ("pct_sem_religiao", "sem"),
-                           ("pct_ate_meio_sm", "pobre"), ("pct_superior_25mais", "sup")):
+                           ("pct_ate_meio_sm", "pobre"), ("pct_superior_25mais", "sup"),
+                           ("pct_pretos_pardos", "negros")):
                 d[f"{rot}{a}"] = num(x[a]["coeficientes"][c], 2, True)
     fc = ROOT / "data" / "output" / "exploratorio_teses" / "censo2010_em_2022.json"
     if fc.exists():

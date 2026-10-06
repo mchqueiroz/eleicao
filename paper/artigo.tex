@@ -87,10 +87,29 @@ eleitoral.
 % ===========================================================================
 \section{Lugares ou perfis: expectativas}
 
-\todo{revisão de literatura em 2 ou 3 parágrafos: geografia eleitoral brasileira (Soares e Terron;
-Zucco; Hunter e Power; Limongi e Guarnieri); religião e voto (Smith; Layton et al.); clivagens
-comparadas (Gethin, Martínez-Toledano e Piketty); nacionalização (Jones e Mainwaring). Conferir cada
-referência antes de citar.}
+A geografia eleitoral brasileira recente nasce de um realinhamento. Em 2006, o voto em Lula migrou
+das regiões mais urbanas e ricas para as mais pobres do Norte e do Nordeste
+\citep{soares2008}. A explicação dominante para essa migração é social e econômica: o voto
+acompanhou a renda e a cobertura de programas de transferência, como o Bolsa Família
+\citep{hunter2007,zucco2008}. Nessa leitura, o mapa é a projeção espacial de uma clivagem de classe,
+e a expectativa é que a estrutura social explique cada vez mais o voto à medida que essa clivagem se
+consolida.
+
+Duas literaturas desafiam essa leitura de lados opostos. A primeira desloca o foco da renda para a
+religião. O crescimento evangélico e a mobilização política de suas lideranças
+\citep{smith2019} tornaram a religião uma linha de divisão visível em 2018, ao lado de região,
+gênero e escolaridade \citep{layton2021}. Em perspectiva comparada, a clivagem que mais cresceu em
+democracias ocidentais foi a de escolaridade, e não a de renda \citep{gethin2021}; a pergunta, para o
+Brasil, é qual dimensão cultural ocupa esse lugar. A segunda desloca o foco do perfil para o lugar.
+Sistemas partidários nacionalizam-se de forma desigual \citep{jones2003}, e a geografia pode
+estruturar a polarização por si mesma, como na divisão entre cidades e interior
+\citep{rodden2019}. Num país federativo, com elites e máquinas estaduais fortes, o estado é o
+candidato natural a esse papel.
+
+Este artigo trata essas leituras como hipóteses rivais e mede as duas no mesmo modelo. A estratégia
+de identificar o efeito do lugar por descontinuidades em fronteiras \citep{keele2015} é especialmente
+adequada aqui: municípios vizinhos separados por uma divisa compartilham clima, economia regional e
+mercado de mídia, mas não o governo estadual nem a política local que ele organiza.
 
 As expectativas pré-registradas se organizam em quatro eixos. No \textbf{eixo 1}, a tese da
 \emph{estruturação} (T1) prevê que a parcela do mapa explicada pela estrutura social cresceu, e a do
@@ -223,9 +242,20 @@ retirada), alinhada por campo. Mediana e IC90\% do \emph{bootstrap}.}\label{fig:
 \end{figure}
 
 \ifexploratorio
-A Figura~\ref{fig:coef} mostra quais variáveis carregam o efeito. \todo{descrever depois de ver os
-coeficientes: sinal e evolução de \% evangélicos (\dado{ev\anoIni} em \anoIni, \dado{ev\anoFim} em
-\anoFim), \% católicos e \% sem religião, comparados à renda.}
+A Figura~\ref{fig:coef} mostra quais variáveis carregam o efeito. O coeficiente padronizado de
+\% evangélicos no voto no PT era de \dado{ev\anoIni} em \anoIni{} e \dado{ev2018} em 2018, e foi a
+\dado{ev\anoFim} em \anoFim{}, mesmo com renda, escolaridade, cor/raça, vizinhança e estado
+controlados.\footnote{As três variáveis religiosas somam quase 100\%; cada coeficiente compara a
+religião correspondente com a categoria residual (outras religiões), mantidas as demais constantes.
+A parcela única da Figura~\ref{fig:dimensoes} trata as três como um bloco e não depende dessa
+escolha.} A renda conta outra história: o coeficiente da pobreza é o maior do modelo
+(\dado{pobre\anoFim} em \anoFim) e quase não muda desde \anoIni{} (\dado{pobre\anoIni}). Seu poder
+explicativo é grande, mas compartilhado: pobreza, baixa escolaridade e população preta e parda
+coincidem nos mesmos municípios, e por isso a parcela \emph{única} da renda é pequena. A religião, ao
+contrário, separa municípios que são parecidos em todo o resto. Um terceiro movimento aparece no
+mesmo modelo: o coeficiente de \% pretos e pardos cresce de \dado{negros\anoIni} para
+\dado{negros\anoFim}, o que sugere que a clivagem racial também se aprofundou, embora quase todo o seu
+poder explicativo seja compartilhado com a renda.
 
 \begin{figure}[htbp]\centering
 \includegraphics[width=\linewidth]{figuras/fig_coeficientes}
@@ -252,8 +282,14 @@ social.}\label{fig:fronteira}
 \end{figure}
 
 A Figura~\ref{fig:mapa} mostra onde está o território: o efeito de cada estado no voto no PT, depois
-de descontado o perfil social de seus municípios.
-\todo{descrever o mapa: quais estados votam acima ou abaixo do esperado pelo perfil social.}
+de descontado o perfil social de seus municípios. Em \anoFim{}, os estados mais abaixo do esperado
+são \dado{ufBaixo\anoFim} p.p.; os mais acima, \dado{ufAlto\anoFim} p.p. Dois padrões se destacam. O
+primeiro é a formação de um bloco amazônico e de fronteira agrícola que vota contra o PT muito além
+do que seu perfil social prevê, e cada vez mais. O segundo é o Rio Grande do Sul, que em todas as
+eleições vota no PT acima do esperado para um estado com seu perfil, um traço de história política
+local que nenhuma variável censitária captura. O território também tem conjuntura: em 2018, o Ceará
+aparece entre os mais abaixo do esperado (\dado{ufCE2018} p.p., contra \dado{ufCE2014} em 2014), o que coincide com a candidatura
+de um político cearense no 1\ordo{} turno.
 
 \begin{figure}[htbp]\centering
 \includegraphics[width=\linewidth]{figuras/fig_mapa_uf}

@@ -113,7 +113,7 @@ def fig_coeficientes(x):
     ax.axvline(0, color=TINTA2, lw=0.8)
     ax.set_yticks(ys, [COVS[c] for c in nomes])
     ax.set_xlabel("coeficiente padronizado no voto no PT (logit; modelo completo)")
-    ax.legend(frameon=False, fontsize=7.5, loc="lower right")
+    ax.legend(frameon=False, fontsize=7.5, loc="lower left")
     ax.grid(axis="y", visible=False)
     fig.tight_layout()
     fig.savefig(SAIDA / "fig_coeficientes.pdf")
@@ -123,10 +123,10 @@ def fig_coeficientes(x):
 def fig_mapa_uf(x):
     from matplotlib.colors import LinearSegmentedColormap, TwoSlopeNorm
     from geovoto.espacial import malha
-    ufs = malha()[["SIGLA_UF", "geometry"]].dissolve("SIGLA_UF").simplify(2000)
+    ufs = malha()[["uf", "geometry"]].to_crs(5880).dissolve("uf").geometry.simplify(3000)   # metros
     cmap = LinearSegmentedColormap.from_list("div", ["#eb6834", "#f0efec", "#2a78d6"])
     anos = sorted(x)
-    lim = max(abs(v) for a in anos for v in x[a]["efeitos_uf_pp"].values())
+    lim = 20.0   # ponytail: escala cortada em ±20 p.p. (RR passa de −35); a seta da barra indica o corte
     fig, axs = plt.subplots(1, len(anos), figsize=(6.3, 2.6))
     for ax, a in zip(np.atleast_1d(axs), anos):
         g = pd.Series(x[a]["efeitos_uf_pp"])
@@ -135,7 +135,7 @@ def fig_mapa_uf(x):
         ax.set_title(str(a), fontsize=9, color=TINTA, loc="left")
         ax.set_axis_off()
     sm = plt.cm.ScalarMappable(cmap=cmap, norm=TwoSlopeNorm(0, -lim, lim))
-    cb = fig.colorbar(sm, ax=axs, orientation="horizontal", fraction=0.05, pad=0.02, aspect=40)
+    cb = fig.colorbar(sm, ax=axs, orientation="horizontal", fraction=0.05, pad=0.02, aspect=40, extend="both")
     cb.set_label("efeito da UF no voto no PT, dada a estrutura social (p.p.)")
     cb.outline.set_visible(False)
     fig.savefig(SAIDA / "fig_mapa_uf.pdf", bbox_inches="tight")
