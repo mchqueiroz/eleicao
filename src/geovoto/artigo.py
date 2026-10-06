@@ -78,11 +78,11 @@ def tab_eixo4(r: dict) -> str:
 
 
 def tab_bym2() -> str | None:
-    f = ROOT / "data" / "output" / "bym2" / "diagnosticos.csv"
-    if not f.exists():
+    fs = sorted((ROOT / "data" / "output" / "bym2").glob("diagnosticos_*.csv"))
+    if not fs:
         return None
     linhas = [[str(x.ano), ALVOS.get(x.alvo, x.alvo), num(x.rhat_max), f"{x.ess_min:.0f}", str(x.divergencias)]
-              for x in pd.read_csv(f).itertuples()]
+              for x in pd.concat(map(pd.read_csv, fs)).itertuples()]
     return tabela(["Ano", "Bloco", "$\\hat R$ máx.", "ESS mín.", "Divergências"], linhas, "llrrr")
 
 

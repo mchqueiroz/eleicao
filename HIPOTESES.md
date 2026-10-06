@@ -87,3 +87,4 @@ Falácia ecológica (as afirmações valem para lugares, não para eleitores); M
 
 - 2026-10-05, depois da tag: `geovoto.veredito` passou a marcar como **PARCIAL** o veredito calculado sem 2026. É só um rótulo; nenhum critério, medida ou limiar mudou.
 - 2026-10-05, depois da tag: o BYM2 passou a usar o sampler NUTS do `nutpie` em vez do NUTS padrão do PyMC, porque este não terminou nem um modelo em 4 h. Modelo, prioris, número de amostras e critérios de convergência são os mesmos.
+- 2026-10-05, depois da tag: no primeiro ajuste (2014, bloco A) o BYM2 não convergiu (R̂ 1,18 e ESS 15 no intercepto; coeficientes com R̂ ≤ 1,03), porque o intercepto e a média dos efeitos de UF não são identificados separadamente. Os efeitos de UF passaram a ter soma zero (reparametrização; não muda a verossimilhança) e as amostras por cadeia subiram de 1.000 para 2.000 para atingir ESS > 400. Critérios de convergência inalterados.
