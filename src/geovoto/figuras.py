@@ -48,27 +48,34 @@ def _alvo(ano: int, lado: str) -> str:
 
 def _serie(r, eixo, chave, item, lado):
     anos = sorted(r)
-    est = [r[a][eixo][_alvo(a, lado)][chave][item] for a in anos]
     reps = [[b[eixo][_alvo(a, lado)][chave][item] for b in r[a]["eixo1_4_boot"]] for a in anos]
-    lo, hi = zip(*[np.percentile(x, [5, 95]) for x in reps])
+    est, lo, hi = zip(*[np.percentile(x, [50, 5, 95]) for x in reps])   # mediana: a mesma que o veredito usa
     return anos, np.array(est), np.array(lo), np.array(hi)
 
 
 def _painel_series(r, eixo, chave, itens: dict, ylabel, nome):
     fig, axs = plt.subplots(1, 2, figsize=(6.3, 2.7), sharey=True)
     for ax, lado in zip(axs, ("PT", "Adversário")):
+        finais = []
         for k, (item, rot) in enumerate(itens.items()):
             anos, est, lo, hi = _serie(r, eixo, chave, item, lado)
             ax.fill_between(anos, lo, hi, color=CORES[k], alpha=0.15, lw=0)
             ax.plot(anos, est, color=CORES[k], marker=MARC[k], ms=4.5, label=rot)
-            ax.annotate(rot, (anos[-1], est[-1]), xytext=(5, 0), textcoords="offset points",
-                        va="center", fontsize=7.5, color=TINTA)
+            finais.append((est[-1], rot, anos[-1]))
+        y0, y1 = ax.get_ylim()
+        usados = []
+        for v, rot, a in sorted(finais, reverse=True):      # rótulo direto só onde não colide
+            if all(abs(v - u) > 0.07 * (y1 - y0) for u in usados):
+                ax.annotate(rot, (a, v), xytext=(5, 0), textcoords="offset points", va="center",
+                            fontsize=7.5, color=TINTA)
+                usados.append(v)
         ax.set_title(lado, fontsize=9, color=TINTA, loc="left")
         ax.set_xticks(anos)
         ax.set_xlim(anos[0] - 0.5, anos[-1] + 4.5)
     axs[0].set_ylabel(ylabel)
-    axs[1].legend(frameon=False, fontsize=7, loc="upper left")
-    fig.tight_layout()
+    h, l = axs[0].get_legend_handles_labels()
+    fig.legend(h, l, loc="lower center", ncol=len(l), frameon=False, fontsize=7.5)
+    fig.tight_layout(rect=(0, 0.08, 1, 1))
     fig.savefig(SAIDA / nome)
     plt.close(fig)
 

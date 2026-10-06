@@ -10,10 +10,11 @@
 \usepackage[hidelinks]{hyperref}
 
 \newcommand{\todo}[1]{\textcolor{red}{[\textbf{A FAZER:} #1]}}
+\newcommand{\ordo}{\textsuperscript{o}}
 \input{gerado/macros}
 
-\title{Entre lugares e dentro deles: renda, escolaridade, território\\
-       e a geografia da divisão eleitoral no Brasil (2014--2026)}
+\title{Fé e fronteira: religião, território e a geografia\\
+       do voto presidencial no Brasil (2014--2026)}
 \author{\todo{nome e filiação}}
 \date{Rascunho de \today}
 
@@ -22,235 +23,329 @@
 
 \ifparcial
 \begin{center}\fbox{\parbox{0.9\linewidth}{\small\textbf{Versão parcial.}
-Os resultados abaixo cobrem \anosAnalise. O pré-registro avalia as teses até 2026; os vereditos
-finais dependem dos arquivos definitivos do TSE para 2026 e serão recalculados com o mesmo código.}}
+Os resultados cobrem \anosAnalise. O pré-registro avalia as teses até 2026; todos os números,
+tabelas e figuras serão recalculados com o mesmo código quando os arquivos definitivos do TSE para
+2026 forem publicados. A interpretação abaixo é provisória.}}
 \end{center}
 \fi
 
 \begin{abstract}
-A divisão eleitoral brasileira é uma divisão de lugares (território, fronteira, vizinhança) ou de
-perfis (estrutura social)? E ela se concentra entre municípios ou dentro deles? Testamos teses rivais,
-pré-registradas antes dos dados finais de 2026, sobre as eleições presidenciais de 2014 a 2026, com
-os dois primeiros colocados de cada eleição definidos por posição e não por partido. Quatro eixos
-organizam a análise: (1) a decomposição de Shapley do mapa municipal em estrutura, vizinhança e
-território; (2) a decomposição da variância entre UF, município e local de votação; (3) índices de
-isolamento e exposição; e (4) a decomposição da estrutura em cinco dimensões censitárias.
-\todo{resultados principais, depois do veredito final com 2026}
+O mapa do voto presidencial brasileiro é um mapa de lugares ou de perfis sociais? Testamos teses
+rivais, pré-registradas antes dos dados finais de 2026, sobre os 5.570 municípios em quatro
+eleições presidenciais (2014--2026). Duas regularidades se destacam. Primeiro, o território
+persiste: municípios socialmente parecidos e vizinhos votam diferente conforme o estado em que estão,
+e o salto nas divisas estaduais é várias vezes maior que o de linhas arbitrárias traçadas dentro dos
+estados. Segundo, a estrutura social que organiza o mapa mudou de natureza: a parcela do mapa que só a
+religião explica, pequena em 2014, passou a ser de longe a maior entre as dimensões sociais em
+2022, mais que o dobro da renda, nos dois campos políticos. Alinhando as séries por campo, o voto contra o PT foi o
+que se reorganizou: em 2018 ele passou a seguir mais o perfil social dos municípios e menos o estado.
+\ifparcial\todo{atualizar com o veredito final de 2026.}\fi
 \end{abstract}
 
-% ---------------------------------------------------------------------------
+% ===========================================================================
 \section{Introdução}
 
-\todo{motivação e literatura: geografia eleitoral brasileira desde 2006 \citep{soares2008}; debate
-lugares versus perfis; lacuna que o desenho preenche.}
+Desde 2006, o mapa do voto presidencial brasileiro tem uma forma reconhecível: o candidato do PT
+vence com folga no Norte e no Nordeste, e seu principal adversário vence no Sul, no Centro-Oeste e
+em boa parte do Sudeste \citep{soares2008,zucco2008,hunter2007}. Essa forma admite duas leituras.
+Na primeira, o mapa é um retrato da composição social dos lugares: municípios mais pobres, menos
+escolarizados ou mais católicos votam de um jeito, e a geografia é só a projeção dessas diferenças no
+espaço. Na segunda, o lugar importa por si: estados têm elites, máquinas, imprensa e histórias
+próprias, e dois municípios iguais em tudo, mas separados por uma divisa, votam diferente.
 
-O artigo confronta duas leituras do mapa eleitoral. Na primeira, o voto municipal passou a seguir
-cada vez mais a composição social dos lugares (renda, escolaridade, religião), e o território, entendido como a
-UF e a posição no mapa, perdeu peso. Na segunda, municípios socialmente parecidos continuam votando
-diferente conforme o estado em que estão, e esse salto nas divisas estaduais não diminuiu. As duas
-leituras não são exclusivas: o desenho admite os quatro resultados possíveis e reporta todos.
+As duas leituras têm implicações distintas. Se o voto segue perfis, a polarização brasileira é uma
+clivagem social que atravessa o território, como as clivagens de escolaridade e religião descritas
+para outras democracias \citep{gethin2021}. Se segue lugares, ela é em parte uma clivagem
+territorial, mais próxima da nacionalização incompleta dos sistemas partidários
+\citep{jones2003} e da divisão entre cidades e interior \citep{rodden2019}. E, se segue perfis,
+importa saber \emph{quais}: a literatura sobre 2018 aponta a religião como linha de divisão
+crescente \citep{smith2019,layton2021}, enquanto a leitura clássica do realinhamento de 2006 enfatiza
+renda e políticas sociais \citep{zucco2008,hunter2007}.
 
-Três escolhas de desenho distinguem o trabalho. Primeiro, as teses, as medidas e os limiares de
-decisão foram fixados num pré-registro público \citep{nosek2018} antes dos dados finais de 2026
-(tag \texttt{prereg-v1}).\footnote{O mesmo pré-registro inclui uma previsão municipal do
-2\textsuperscript{o} turno de 2026, que está fora do escopo deste artigo. A previsão e sua
-avaliação estão publicadas na release \texttt{prereg-v1} do repositório.} Segundo, os blocos são posicionais (A é o primeiro colocado nacional no 1\textsuperscript{o}
-turno; B, o segundo), e toda estimativa com sinal é reportada para os dois. Terceiro, todas as
-afirmações valem para lugares, não para eleitores \citep{robinson1950}.
+Este artigo confronta essas leituras com um desenho pré-registrado. Antes da divulgação dos dados
+finais de 2026, fixamos publicamente as teses, as medidas e os limiares que decidem entre elas
+\citep{nosek2018}. Analisamos os 5.570 municípios em quatro eleições, com três estratégias: (i) uma
+decomposição de Shapley que reparte o mapa entre estrutura social, vizinhança e estado; (ii) uma
+comparação de municípios vizinhos separados por divisas estaduais, contra uma distribuição de linhas
+arbitrárias; e (iii) uma decomposição da estrutura social em cinco dimensões censitárias.
 
-% ---------------------------------------------------------------------------
-\section{Dados}
+Os resultados sustentam uma síntese que chamamos de \emph{fé e fronteira}. O território não
+desapareceu: o salto nas divisas estaduais, condicionado ao perfil social, é de \dado{real\anoFim} p.p.
+em \anoFim{}, e nenhuma das \dado{nPlacebos} linhas arbitrárias chega perto disso. Ao mesmo tempo, a
+estrutura que organiza o mapa mudou: a religião, e não a renda, passou a ser a dimensão social com
+maior poder explicativo próprio. A mudança foi assimétrica no tempo: em 2018, o voto contra o PT se
+desprendeu dos estados e passou a seguir o perfil social dos municípios; em 2022, a religião se
+tornou a principal linha de separação dos dois lados.
 
-\paragraph{Resultados eleitorais.} Arquivos de dados abertos do TSE por município e zona e por
-seção, para os dois turnos de 2014, 2018 e 2022. Para 2026, \todo{arquivos finais do TSE (previstos
-para novembro de 2026)}. As seções são agregadas por local de votação, que aproxima o bairro;
-seções de um mesmo local são subdivisões administrativas arbitrárias.
+O artigo contribui de três formas. Substantivamente, mostra que a polarização brasileira combina uma
+clivagem religiosa nacional com uma clivagem territorial persistente, e não uma substituindo a outra.
+Metodologicamente, propõe uma medida do salto nas divisas sem o viés de ruído das medidas usuais e a
+compara com uma distribuição de linhas-placebo. E, em termos de transparência, separa explicitamente
+o que foi testado como pré-registrado do que foi descoberto depois, uma distinção rara na geografia
+eleitoral.
 
-\paragraph{Unidade.} Município: 5.570 em 2014--2022 e 5.571 em 2026. Para comparações no tempo, Boa
-Esperança do Norte (MT) é agregado com Sorriso e Nova Ubiratã numa área mínima comparável. Votos no
-exterior ficam fora.
+% ===========================================================================
+\section{Lugares ou perfis: expectativas}
 
-\paragraph{Desfechos.} Participação de A e de B nos votos válidos do 1\textsuperscript{o} turno; comparecimento sobre
-aptos; $|\text{margem}| = |s_A - s_B|$. O 2\textsuperscript{o} turno entra como robustez.
+\todo{revisão de literatura em 2 ou 3 parágrafos: geografia eleitoral brasileira (Soares e Terron;
+Zucco; Hunter e Power; Limongi e Guarnieri); religião e voto (Smith; Layton et al.); clivagens
+comparadas (Gethin, Martínez-Toledano e Piketty); nacionalização (Jones e Mainwaring). Conferir cada
+referência antes de citar.}
 
-\paragraph{Estrutura.} Cinco dimensões com definição idêntica nos Censos de 2010 e 2022: econômica
-(\% de moradores com renda \emph{per capita} até meio salário mínimo), educacional (\% com superior
-completo, 25 anos ou mais), religiosa (\% de evangélicos, católicos e sem religião), demográfica (\%
-urbana, log do eleitorado) e cor/raça (\% de pretos e pardos, \% de indígenas). O Censo de 2010 serve a
-2014 e 2018; o de 2022, a 2022 e 2026.
+As expectativas pré-registradas se organizam em quatro eixos. No \textbf{eixo 1}, a tese da
+\emph{estruturação} (T1) prevê que a parcela do mapa explicada pela estrutura social cresceu, e a do
+estado caiu; a tese do \emph{território persistente} (T2) prevê que o salto nas divisas estaduais é
+grande e não diminuiu. No \textbf{eixo 4}, a tese da \emph{renda} prevê que a dimensão econômica é a
+que mais separa os municípios; a do \emph{deslocamento}, que outra dimensão (escolaridade ou religião)
+a ultrapassou. Os eixos 2 (onde está a variância: entre ou dentro dos municípios) e 3 (isolamento
+entre os blocos) completam o desenho e são resumidos na Seção~\ref{sec:eixos23}.
 
-% ---------------------------------------------------------------------------
-\section{Desenho e métodos}
+% ===========================================================================
+\section{Dados e desenho}
 
-\subsection{Eixo 1: o que explica o mapa}
+\paragraph{Unidades e desfechos.} Os 5.570 municípios, com votos do TSE nos dois turnos de 2014,
+2018 e 2022 \ifparcial (2026 entra quando os arquivos definitivos forem publicados)\fi. Os
+desfechos são as participações dos dois primeiros colocados nos votos válidos do 1\ordo{} turno, em
+logit. Boa Esperança do Norte (MT), criado depois de 2022, é agregado a seus municípios de origem.
 
-Para cada eleição e bloco, regredimos $\operatorname{logit}(s)$ por MQO ponderado pelo eleitorado sobre
-três grupos de regressores: estrutura (as cinco dimensões), vizinhança e território (efeitos de UF).
-A vizinhança é representada por um filtro espacial de autovetores \citep{griffith2003,tiefelsdorf2007}
-do grafo de contiguidade \emph{queen} unido ao vizinho mais próximo, retendo os autovetores com I de
-Moran de pelo menos $0{,}75\,\lambda_{\max}$ (\nAutovetores{} vetores). O $R^2$ ajustado é repartido
-entre os três grupos pelo valor de Shapley sobre os $2^3$ submodelos \citep{gromping2006}; reportamos
-também os efeitos únicos e a parcela compartilhada, que não é atribuída a nenhum grupo. Os intervalos
-vêm de 200 réplicas de \emph{bootstrap} de municípios estratificado por UF.
+\paragraph{Blocos.} O pré-registro define os blocos por posição (A: primeiro colocado nacional no
+1\ordo{} turno; B: segundo), para não depender de nomes ou partidos. Essa escolha tem um custo: o bloco
+A é o PT em 2014 e 2022, mas o adversário do PT em 2018, e uma tendência do bloco A mistura lados.
+Como o PT esteve entre os dois primeiros nas quatro eleições, as análises exploratórias alinham as
+séries por campo: \emph{PT} e \emph{adversário} (o outro entre os dois primeiros). O alinhamento não
+envolve escolha do pesquisador.
 
-\textbf{T1 (estruturação)} é suportada se a tendência linear da parcela estrutural no período for de
-pelo menos $+5$ p.p. com IC90\% acima de zero, e refutada se o IC90\% incluir zero.
+\paragraph{Estrutura social.} Cinco dimensões, com definição idêntica nos Censos de 2010 (usado em
+2014 e 2018) e 2022: econômica (\% de moradores com renda \emph{per capita} até meio salário mínimo),
+educacional (\% com superior completo, 25 anos ou mais), religiosa (\% de evangélicos, católicos e
+sem religião), demográfica (\% urbana, log do eleitorado) e cor/raça (\% de pretos e pardos, \% de
+indígenas).
 
-\textbf{T2 (território persistente)} usa pares de municípios contíguos separados por divisa estadual
-\citep{keele2015}. Estimamos, por diferenças dentro do par, o salto de cada UF condicionado à estrutura,
-e resumimos as divisas pelo salto quadrático médio
+\paragraph{Decomposição do mapa.} Para cada eleição e bloco, um MQO ponderado pelo eleitorado sobre
+três grupos de regressores: estrutura social, vizinhança e estado (efeitos fixos de UF). A vizinhança
+é um filtro espacial de autovetores \citep{griffith2003,tiefelsdorf2007} do grafo de contiguidade,
+com \nAutovetores{} autovetores. O $R^2$ ajustado é repartido entre os três grupos pelo valor de
+Shapley \citep{gromping2006}. A mesma decomposição, aplicada às cinco dimensões dentro da estrutura,
+dá a \emph{parcela única} de cada dimensão: quanto o $R^2$ cai quando só ela é retirada. A parcela
+compartilhada, grande porque renda, escolaridade e cor/raça andam juntas, não é atribuída a nenhuma.
+Os intervalos de 90\% vêm de 200 réplicas de \emph{bootstrap} de municípios estratificado por UF.
+
+\paragraph{Salto nas divisas.} Em pares de municípios contíguos separados por divisa estadual
+\citep{keele2015}, a diferença de voto dentro do par é regredida nas diferenças de estrutura e nos
+efeitos de UF. O salto típico é o desvio quadrático médio entre os efeitos estimados das duas UFs
+de cada par, descontada a variância exata do estimador:
 \begin{equation}
-  J = \sqrt{\overline{(\hat\gamma_a - \hat\gamma_b)^2} - \overline{\operatorname{Var}(\hat\gamma_a - \hat\gamma_b)}},
+  J = \sqrt{\overline{(\hat\gamma_a - \hat\gamma_b)^2} - \overline{\operatorname{Var}(\hat\gamma_a - \hat\gamma_b)}}.
 \end{equation}
-em que a variância é a exata do estimador (os pares que compartilham um município têm erros
-correlacionados). Sem essa correção, o ruído infla qualquer salto estimado. T2 é suportada se $J \geq 3$
-p.p. no último ano e não cair significativamente desde o primeiro, e refutada se o IC90\% ficar dentro
-de $[-3, 3]$. Como validação, a mesma medida é calculada em fronteiras-placebo, com cada UF partida na
-mediana da longitude, e deve ter IC90\% contendo zero.
+Sem o desconto, o ruído municipal inflaria qualquer salto estimado. Para saber se $J$ é grande, a
+mesma medida é calculada em linhas-placebo que partem cada estado ao meio; o pré-registro usa uma
+linha (a mediana da longitude), e a análise exploratória usa \dado{nPlacebos} linhas com direção e
+posição sorteadas.
 
-\subsection{Eixo 2: onde está a divisão}
+% ===========================================================================
+\section{Resultados pré-registrados}\label{sec:prereg}
 
-Decompomos a variância de $\operatorname{logit}(A/(A+B))$ em UF, município e local de votação, com um
-estimador de momentos ponderado e corrigido para poucos locais por município e para o ruído binomial.
-Cada lado (entre lugares ou dentro deles) vence se sua parcela crescer pelo menos 5 p.p. com IC90\% acima de zero.
-
-\subsection{Eixo 3: quem convive com quem}
-
-Isolamento e exposição \citep{massey1988}: $\text{Isol}_X = \sum_i (x_i/X)(x_i/t_i)$ e
-$\text{Exp}_{X\to Y} = \sum_i (x_i/X)(y_i/t_i)$, para $X, Y \in \{A, B\}$, nas escalas município e local
-de votação. Há separação se o isolamento sobe pelo menos 0,05 para os dois blocos, e estabilidade se a
-variação fica em $[-0{,}05;\,0{,}05]$ para os dois.
-
-\subsection{Eixo 4: qual diferença divide}
-
-Decomposição de Shapley dentro do bloco estrutural, entre as cinco dimensões. \textbf{T4-renda}: a
-dimensão econômica tem a maior parcela única em todas as eleições. \textbf{T4-deslocamento}: a parcela
-única de outra dimensão cresce pelo menos 5 p.p. e supera a econômica em alguma das duas últimas eleições.
-
-\subsection{Robustez}
-
-Um modelo BYM2 binomial \citep{riebler2016} sobre as contagens, com efeito de UF, estima os
-coeficientes com dependência espacial explícita. A convergência exigida é $\hat R < 1{,}01$, ESS acima de 400 e nenhuma
-divergência. Também refazemos o eixo 1 com limiares de 0,5 e 0,25 no filtro espacial, com regiões
-imediatas no lugar de UF e com o 2\textsuperscript{o} turno.
-
-\subsection{Poder do desenho}
-
-Antes do congelamento, simulamos desfechos sobre a geografia e as covariáveis reais para medir com que
-frequência cada regra de decisão acerta. \todo{tabela de poder no apêndice; resumir: com salto
-verdadeiro de 3 p.p., T2 é suportada em cerca de metade das réplicas; com 5 p.p., na maioria; sem
-salto, nunca.}
-
-% ---------------------------------------------------------------------------
-\section{Resultados}
-
-\ifparcial\noindent\emph{Resultados parciais (\anosAnalise).}\par\fi
-
+\ifparcial\noindent\emph{Parciais: \anosAnalise.}\par\fi
 A Tabela~\ref{tab:veredito} aplica mecanicamente as regras do pré-registro.
 
 \begin{table}[htbp]\centering\small
-\caption{Vereditos pelas regras pré-registradas.}\label{tab:veredito}
+\caption{Vereditos pelas regras pré-registradas (blocos posicionais).}\label{tab:veredito}
 \input{gerado/tab_veredito}
 \end{table}
 
-\subsection{Eixo 1}\label{sec:res-eixo1}
+\paragraph{T1 (estruturação).} A tendência da parcela estrutural foi de \tUmA{} p.p. no bloco A
+(\emph{\tUmVA}) e de \tUmB{} p.p. no bloco B (\emph{\tUmVB}). Como os blocos posicionais trocam de
+lado em 2018, esse contraste é difícil de interpretar diretamente; a Seção~\ref{sec:explor} mostra o
+que ele esconde.
 
-A tendência da parcela estrutural no período foi de \tUmA{} p.p. para o bloco A e \tUmB{} p.p. para
-o bloco B (Tabela~\ref{tab:eixo1}); T1 é \emph{\tUmVA} para A e \emph{\tUmVB} para B.
-\todo{interpretar só depois do veredito final.}
+\paragraph{T2 (território).} O salto nas divisas em \anoFim{} foi de \tDoisSalto{} p.p. (IC90\%
+\tDoisLo{} a \tDoisHi{}; veredito: \emph{\tDoisVeredito}). Na linha-placebo do pré-registro, a mesma
+medida deu \tDoisPlacebo{} p.p. (IC90\% \tDoisPlaceboLo{} a \tDoisPlaceboHi{}).
+\ifplacebook
+O intervalo do placebo contém zero, como exigido.
+\else
+A regra pré-registrada exige que esse intervalo contenha zero, e ele não contém: a validação falhou.
+Reportamos o veredito ao lado da falha, sem alterar a medida. A Seção~\ref{sec:explor} sugere a razão:
+uma única linha de longitude corta regiões genuinamente diferentes dentro de alguns estados, de modo
+que o placebo mede diferenças regionais reais, e não apenas viés.
+\fi
+
+\paragraph{T4 (qual diferença divide).} O veredito é \emph{\tQuatroA} no bloco A e \emph{\tQuatroB}
+no bloco B (Tabela~\ref{tab:eixo4}). Esse é o resultado mais robusto do desenho: ele não depende do
+alinhamento dos blocos.
+
+% ===========================================================================
+\section{Fé e fronteira: análises exploratórias}\label{sec:explor}
+
+\noindent\emph{As análises desta seção foram definidas depois de ver os resultados parciais e não
+fazem parte do pré-registro.}
+
+\subsection{O voto contra o PT se reorganizou em 2018}
+
+A Figura~\ref{fig:shapley} alinha a decomposição por campo. No PT, as parcelas são estáveis: a
+estrutura social explica \dado{estPT\anoIni} do $R^2$ em \anoIni{} e \dado{estPT\anoFim} em
+\anoFim{}. No adversário, a estrutura sobe de \dado{estAdv2014} em 2014 para \dado{estAdv2018} em
+2018, e o estado cai de \dado{ufAdv2014} para \dado{ufAdv2018}. O voto contra o PT, que em 2014 ainda
+variava muito de estado para estado, passou a seguir o perfil social dos municípios de forma quase
+uniforme no país. O contraste posicional da Tabela~\ref{tab:veredito} (T1 suportada só para B) é a
+sombra desse movimento: em 2018, o bloco B é o PT, e a série posicional mistura os dois lados.
+
+\begin{figure}[htbp]\centering
+\includegraphics[width=\linewidth]{figuras/fig_shapley}
+\caption{Parcelas de Shapley do $R^2$ ajustado, alinhadas por campo. Linhas: mediana do
+\emph{bootstrap}; faixas: IC90\%. As estimativas pontuais ficam cerca de 0,01 acima das medianas em
+todos os anos (Tabela~\ref{tab:eixo1}), o que não altera as tendências.}\label{fig:shapley}
+\end{figure}
+
+\subsection{A religião passou a renda}
+
+A Figura~\ref{fig:dimensoes} decompõe a estrutura. Em 2014, a parcela única da religião era pequena
+nos dois campos (\dado{relPT2014} no PT, já um pouco acima da renda, e \dado{relAdv2014} no
+adversário, bem abaixo dela). Em \anoFim{}, ela é a
+maior entre as cinco dimensões: \dado{relPT\anoFim} no PT e \dado{relAdv\anoFim} no adversário,
+contra \dado{rendaPT\anoFim} e \dado{rendaAdv\anoFim} da renda. No adversário, o crescimento já
+aparece em 2018 (\dado{relAdv2018}); no PT, ele se concentra em 2022. A escolaridade, apontada como
+a clivagem emergente em outras democracias \citep{gethin2021}, tem parcela única próxima de zero em
+todos os anos: o que ela explica, explica junto com renda e cor/raça.
+
+\begin{figure}[htbp]\centering
+\includegraphics[width=\linewidth]{figuras/fig_dimensoes}
+\caption{Parcela única de cada dimensão social no $R^2$ (quanto o ajuste cai quando só ela é
+retirada), alinhada por campo. Mediana e IC90\% do \emph{bootstrap}.}\label{fig:dimensoes}
+\end{figure}
+
+\ifexploratorio
+A Figura~\ref{fig:coef} mostra quais variáveis carregam o efeito. \todo{descrever depois de ver os
+coeficientes: sinal e evolução de \% evangélicos (\dado{ev\anoIni} em \anoIni, \dado{ev\anoFim} em
+\anoFim), \% católicos e \% sem religião, comparados à renda.}
+
+\begin{figure}[htbp]\centering
+\includegraphics[width=\linewidth]{figuras/fig_coeficientes}
+\caption{Coeficientes padronizados no voto no PT (logit), no modelo com estrutura, vizinhança e
+efeitos de UF. Pontos: estimativa; barras: IC90\% do \emph{bootstrap}.}\label{fig:coef}
+\end{figure}
+\fi
+
+\subsection{A fronteira persiste}
+
+\ifexploratorio
+A Figura~\ref{fig:fronteira} compara o salto nas divisas estaduais com o de \dado{nPlacebos} linhas
+traçadas ao acaso dentro dos estados. Em \anoFim{}, a mediana das linhas-placebo é \dado{plMed\anoFim}
+p.p., e a maior delas chega a \dado{plMax\anoFim} p.p.; nas divisas reais, o salto é de
+\dado{real\anoFim} p.p. (linhas-placebo com salto igual ou maior: \dado{plAcima\anoFim}). O padrão se
+repete nos três anos. As divisas estaduais não são uma descontinuidade espacial qualquer: elas
+separam municípios parecidos que votam diferente.
+
+\begin{figure}[htbp]\centering
+\includegraphics[width=\linewidth]{figuras/fig_fronteira}
+\caption{Salto quadrático médio nas divisas estaduais (linha) e em \dado{nPlacebos} linhas-placebo
+com direção e posição sorteadas dentro de cada estado (histograma), condicionado à estrutura
+social.}\label{fig:fronteira}
+\end{figure}
+
+A Figura~\ref{fig:mapa} mostra onde está o território: o efeito de cada estado no voto no PT, depois
+de descontado o perfil social de seus municípios.
+\todo{descrever o mapa: quais estados votam acima ou abaixo do esperado pelo perfil social.}
+
+\begin{figure}[htbp]\centering
+\includegraphics[width=\linewidth]{figuras/fig_mapa_uf}
+\caption{Efeito de cada UF no voto no PT (p.p.), num MQO ponderado com a estrutura social, centrado
+na média nacional.}\label{fig:mapa}
+\end{figure}
+\else
+\todo{distribuição de linhas-placebo e mapa dos efeitos de UF (\texttt{geovoto.teses\_extra}).}
+\fi
+
+% ===========================================================================
+\section{Onde está a divisão e quem convive com quem}\label{sec:eixos23}
+
+Os eixos 2 e 3 do pré-registro dão o contexto. A variância do voto entre os dois blocos está
+concentrada entre estados e entre municípios; a parcela entre lugares variou \eDoisEntre{} p.p. no
+período (\emph{\eDoisVEntre}) e a parcela dentro dos municípios, entre locais de votação,
+\eDoisDentro{} p.p. (\emph{\eDoisVDentro}; Tabela~\ref{tab:eixo2}). No local de votação, o
+isolamento variou \eTresA{} no bloco A e \eTresB{} no bloco B (veredito: \emph{\eTresV};
+Tabela~\ref{tab:eixo3}).
+
+% ===========================================================================
+\section{Discussão}
+
+\ifparcial\noindent\emph{Provisória, sobre \anosAnalise.}\par\fi
+O mapa eleitoral brasileiro não escolheu entre lugares e perfis. Ele combina uma clivagem religiosa
+que atravessa o país, crescente e já maior que a de renda, com uma clivagem territorial que as
+divisas estaduais ainda marcam com nitidez. As duas coisas são compatíveis porque a estrutura social
+explica a \emph{inclinação} do voto dentro de cada estado, enquanto o estado desloca o \emph{nível}.
+
+Três cautelas. Primeiro, as afirmações valem para lugares, não para pessoas \citep{robinson1950}:
+``municípios mais evangélicos'' não equivale a ``eleitores evangélicos''. A validação com dados
+individuais do Estudo Eleitoral Brasileiro é o próximo passo. Segundo, as variáveis religiosas de 2014
+e 2018 vêm do Censo de 2010; parte do crescimento da parcela religiosa em 2022 pode refletir a
+atualização para o Censo de 2022. Terceiro, a análise alinhada por campo e a distribuição de
+placebos são exploratórias. \ifparcial Os dados de 2026 são o teste fora da amostra dessas
+regularidades.\fi
+\todo{conferir a cautela do Censo: refazer 2022 com o Censo 2010 como robustez.}
+
+% ===========================================================================
+\section{Limitações}
+
+Falácia ecológica \citep{robinson1950}; dependência de escala \citep{openshaw1984}, tratada com três
+níveis no eixo 2 e com regiões imediatas no lugar de UF na robustez; a ``vizinhança'' é dependência
+residual, não contágio; covariáveis censitárias defasadas em relação a 2018 e 2026; o
+\emph{bootstrap} das parcelas de Shapley fica cerca de 0,01 abaixo das estimativas pontuais.
+\ifplacebook\else A validação por placebo do T2 falhou nos dados reais (Seção~\ref{sec:prereg}).\fi
+
+% ===========================================================================
+\appendix
+\section{Tabelas}
 
 \begin{table}[htbp]\centering\small
-\caption{Decomposição de Shapley do $R^2$ ajustado (eixo 1).}\label{tab:eixo1}
+\caption{Decomposição de Shapley do $R^2$ ajustado (eixo 1, blocos posicionais, estimativas pontuais).}\label{tab:eixo1}
 \input{gerado/tab_eixo1}
 \end{table}
 
-Nas divisas estaduais, o salto corrigido em \anoFim{} foi de \tDoisSalto{} p.p. (IC90\%
-\tDoisLo{} a \tDoisHi{}), e o veredito mecânico de T2 é \emph{\tDoisVeredito}. Nas fronteiras-placebo
-a mesma medida deu \tDoisPlacebo{} p.p. (IC90\% \tDoisPlaceboLo{} a \tDoisPlaceboHi{};
-Tabela~\ref{tab:fronteira}).
-\ifplacebook
-O intervalo contém zero, como esperado, e a validação passa.
-\else
-O intervalo deveria conter zero e não contém: a validação falhou. A medida, portanto, ainda carrega
-viés nos dados reais, provavelmente por ruído espacialmente correlacionado, ausente da simulação de
-poder. Conforme o pré-registro, reportamos o veredito de T2 ao lado dessa falha, sem alterar a medida.
-\fi
-
 \begin{table}[htbp]\centering\small
-\caption{Salto quadrático médio nas divisas estaduais e nas fronteiras-placebo (p.p.).}\label{tab:fronteira}
+\caption{Salto nas divisas estaduais e na linha-placebo do pré-registro (p.p.; mediana e IC90\% do \emph{bootstrap}).}\label{tab:fronteira}
 \input{gerado/tab_fronteira}
 \end{table}
 
-\subsection{Eixo 2}
-
-A parcela entre lugares (UF e município) variou \eDoisEntre{} p.p., e a parcela dentro dos lugares,
-\eDoisDentro{} p.p. (Tabela~\ref{tab:eixo2}). Veredito pelas regras: entre lugares,
-\emph{\eDoisVEntre}; dentro dos lugares, \emph{\eDoisVDentro}.
+\begin{table}[htbp]\centering\small
+\caption{Efeitos únicos das dimensões estruturais (eixo 4, blocos posicionais).}\label{tab:eixo4}
+\resizebox{\linewidth}{!}{\input{gerado/tab_eixo4}}
+\end{table}
 
 \begin{table}[htbp]\centering\small
 \caption{Parcelas da variância de $\operatorname{logit}(A/(A+B))$ por nível (eixo 2).}\label{tab:eixo2}
 \input{gerado/tab_eixo2}
 \end{table}
 
-\subsection{Eixo 3}
-
-Na escala do local de votação, o isolamento variou \eTresA{} para o bloco A e \eTresB{} para o bloco
-B (Tabela~\ref{tab:eixo3}). O veredito mecânico é \emph{\eTresV}; mudanças assimétricas são
-reportadas por bloco, sem qualificação.
-
 \begin{table}[htbp]\centering\small
 \caption{Isolamento e exposição (eixo 3).}\label{tab:eixo3}
 \input{gerado/tab_eixo3}
 \end{table}
 
-\subsection{Eixo 4}
-
-O veredito mecânico é \emph{\tQuatroA} para o bloco A e \emph{\tQuatroB} para o bloco B
-(Tabela~\ref{tab:eixo4}). A parcela compartilhada entre as dimensões é grande, porque renda,
-escolaridade e cor/raça são fortemente correlacionadas entre municípios, e não é atribuída a nenhuma
-delas.
-
-\begin{table}[htbp]\centering\small
-\caption{Efeitos únicos das dimensões estruturais (eixo 4).}\label{tab:eixo4}
-\resizebox{\linewidth}{!}{\input{gerado/tab_eixo4}}
-\end{table}
-
-\subsection{Robustez}
+\section{Robustez}
 
 \ifbymdois
 \begin{table}[htbp]\centering\small
-\caption{Diagnósticos de convergência do BYM2.}\label{tab:bym2}
+\caption{Diagnósticos de convergência do BYM2 \citep{riebler2016}.}\label{tab:bym2}
 \input{gerado/tab_bym2}
 \end{table}
 \todo{coeficientes do BYM2 versus MQO.}
 \else
-\todo{BYM2 em execução.}
+\todo{BYM2 \citep{riebler2016} em execução.}
 \fi
-\todo{sensibilidade do filtro espacial, regiões imediatas e 2\textsuperscript{o} turno.}
+\todo{sensibilidade do filtro espacial (limiares 0,5 e 0,25), regiões imediatas e 2\ordo{} turno.}
 
-% ---------------------------------------------------------------------------
-\section{Discussão}
-
-\todo{escrever só depois do veredito final com 2026.}
-
-\section{Limitações}
-
-As afirmações valem para lugares, não para eleitores \citep{robinson1950}. Os resultados dependem da
-escala de agregação \citep{openshaw1984}; por isso o eixo 2 usa três níveis e a robustez troca UF por
-regiões imediatas. A ``vizinhança'' é dependência residual, não contágio. O cadastro eleitoral
-desatualizado afeta a abstenção. As covariáveis censitárias são defasadas em relação às eleições de
-2018 e 2026.
-\ifplacebook\else Por fim, a validação por placebo do T2 falhou nos dados reais
-(Seção~\ref{sec:res-eixo1}).\fi
-
-% ---------------------------------------------------------------------------
-\appendix
 \section{Desvios do pré-registro}
 
 \begin{enumerate}
-  \item O veredito calculado sem 2026 recebe o rótulo ``parcial''. É só um rótulo.
+  \item O veredito calculado sem 2026 recebe o rótulo ``parcial''.
   \item O BYM2 passou a usar o amostrador NUTS do \texttt{nutpie}, porque o padrão do PyMC não
-        terminou nenhum modelo em 4 horas. Modelo, prioris e critérios são os mesmos.
+        terminou nenhum modelo em 4 horas.
+  \item No primeiro ajuste, o BYM2 não convergiu no intercepto ($\hat R = 1{,}18$), que não é
+        identificado separadamente da média dos efeitos de UF. Os efeitos de UF passaram a ter soma
+        zero (reparametrização) e as amostras por cadeia subiram de 1.000 para 2.000.
+  \item As análises da Seção~\ref{sec:explor} são exploratórias e foram definidas depois dos resultados
+        parciais.
 \end{enumerate}
 
 \bibliographystyle{abbrvnat}

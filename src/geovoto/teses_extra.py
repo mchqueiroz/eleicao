@@ -7,6 +7,8 @@ E2 Distribuição nula do salto nas divisas: 200 linhas-placebo aleatórias por 
 E3 Coeficientes padronizados das covariáveis no modelo completo (estrutura + MESF + UF), por ano,
    com bootstrap de municípios estratificado por UF.
 E4 Efeitos de UF condicionais à estrutura (p.p. de voto no PT), para o mapa do território.
+E5 Teste do censo: 2022 com as covariáveis do Censo 2010 (as de 2014/2018). Separa mudança eleitoral
+   de mudança de medição no salto da religião em 2022. `python -m geovoto.teses_extra censo`
 
 Saída: data/output/exploratorio_teses/resultados.json
 """
@@ -108,7 +110,29 @@ def rodar() -> dict:
     return res
 
 
+def censo_2010_em(ano: int = 2022) -> dict:
+    from geovoto.eixos import ALVOS_BOOT, bootstrap_eixo1_4, eixo1_e_4
+    arestas = pd.read_parquet(PROCESSED / "vizinhanca.parquet")
+    d = base(ano)
+    covs = [c for c in sum(DIMENSOES.values(), []) if c != "log_aptos"]
+    c10 = pd.read_parquet(PROCESSED / "censo2010_municipio.parquet").set_index("cd_municipio_ibge")
+    d[covs] = c10.loc[d.index, covs].to_numpy()
+    V = mesf(arestas, d.index)[MESF_LIMIAR]
+    pt = campo_pt(ano)
+    lados = {"PT": f"y{pt}", "Adv": f"y{'B' if pt == 'A' else 'A'}"}
+    boot = bootstrap_eixo1_4(d, V, N_BOOT, CONFIG["seed"])
+    ponto = eixo1_e_4(d, V, None, None, ALVOS_BOOT)
+    return {lado: {"unicos": ponto["eixo4"][alvo]["unicos"],
+                   "unicos_boot": [b["eixo4"][alvo]["unicos"] for b in boot]} for lado, alvo in lados.items()}
+
+
 if __name__ == "__main__":
+    import sys
+    if sys.argv[1:] == ["censo"]:
+        SAIDA.mkdir(parents=True, exist_ok=True)
+        (SAIDA / "censo2010_em_2022.json").write_text(json.dumps(censo_2010_em(2022)))
+        print("ok censo")
+        sys.exit()
     assert campo_pt(2014) == "A" and campo_pt(2018) == "B" and campo_pt(2022) == "A"
     SAIDA.mkdir(parents=True, exist_ok=True)
     (SAIDA / "resultados.json").write_text(json.dumps(rodar()))

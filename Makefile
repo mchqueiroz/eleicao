@@ -133,4 +133,5 @@ poder: painel censo vizinhanca
 # artigo: tabelas e macros saem de data/output (nada digitado à mão); PDF em paper/build/
 paper:
 	uv run python -m geovoto.artigo
+	uv run python -m geovoto.figuras
 	cd paper && latexmk -pdf -interaction=nonstopmode -outdir=build artigo.tex

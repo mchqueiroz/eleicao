@@ -5,6 +5,8 @@ Rodar com `make paper`, que também compila paper/artigo.tex.
 """
 import json
 
+import numpy as np
+
 import pandas as pd
 
 from geovoto import ROOT
@@ -114,12 +116,44 @@ def macros(r: dict, v: dict, bym2: bool) -> str:
     return "\n".join(linhas) + "\n"
 
 
+def dados_exploratorios(r: dict) -> str:
+    """\\dado{chave} para os números das análises exploratórias (geovoto.teses_extra), por ano."""
+    from geovoto.teses_extra import campo_pt
+    f = ROOT / "data" / "output" / "exploratorio_teses" / "resultados.json"
+    x = {int(a): v for a, v in json.loads(f.read_text()).items()} if f.exists() else {}
+    d = {}
+    med = lambda reps: float(np.median(reps))
+    for a in sorted(r):
+        pt = campo_pt(a)
+        lados = {"PT": f"y{pt}", "Adv": f"y{'B' if pt == 'A' else 'A'}"}
+        for lado, alvo in lados.items():
+            boot = r[a]["eixo1_4_boot"]
+            for k, rot in (("estrutura", "est"), ("territorio", "uf")):
+                d[f"{rot}{lado}{a}"] = num(med([b["eixo1"][alvo]["shapley"][k] for b in boot]), 2)
+            for k, rot in (("religiosa", "rel"), ("economica", "renda"), ("educacional", "educ")):
+                d[f"{rot}{lado}{a}"] = num(med([b["eixo4"][alvo]["unicos"][k] for b in boot]), 3)
+        d[f"real{a}"] = num(r[a]["fronteira_pp"]["real"], 1)
+        if a in x:
+            pl = np.array(x[a]["placebos_aleatorios"])
+            d[f"plMed{a}"], d[f"plMax{a}"] = num(np.median(pl), 1), num(pl.max(), 1)
+            d[f"plAcima{a}"] = str(int((pl >= r[a]["fronteira_pp"]["real"]).sum()))
+            for c, rot in (("pct_evangelicos", "ev"), ("pct_catolicos", "cat"), ("pct_sem_religiao", "sem"),
+                           ("pct_ate_meio_sm", "pobre"), ("pct_superior_25mais", "sup")):
+                d[f"{rot}{a}"] = num(x[a]["coeficientes"][c], 2, True)
+    d["nPlacebos"] = str(len(next(iter(x.values()))["placebos_aleatorios"])) if x else "0"
+    linhas = ["\\newcommand{\\dado}[1]{\\ifcsname dado@#1\\endcsname\\csname dado@#1\\endcsname"
+              "\\else\\textcolor{red}{??#1}\\fi}"]
+    linhas += [f"\\expandafter\\def\\csname dado@{k}\\endcsname{{{v}}}" for k, v in d.items()]
+    linhas.append(f"\\newif\\ifexploratorio\\exploratorio{'true' if x else 'false'}")
+    return "\n".join(linhas) + "\n"
+
+
 def gerar() -> None:
     r = json.loads((ROOT / "data" / "output" / "eixos" / "resultados.json").read_text())
     r = {int(a): x for a, x in r.items() if not str(a).startswith("_")}
     v, bym2 = veredito(r), tab_bym2()
     SAIDA.mkdir(parents=True, exist_ok=True)
-    arquivos = {"macros": macros(r, v, bym2 is not None), "tab_veredito": tab_veredito(v),
+    arquivos = {"macros": macros(r, v, bym2 is not None) + dados_exploratorios(r), "tab_veredito": tab_veredito(v),
                 "tab_eixo1": tab_eixo1(r), "tab_fronteira": tab_fronteira(r), "tab_eixo2": tab_eixo2(r),
                 "tab_eixo3": tab_eixo3(r), "tab_eixo4": tab_eixo4(r), "tab_bym2": bym2 or "% BYM2 ainda não rodou\n"}
     for nome, txt in arquivos.items():
